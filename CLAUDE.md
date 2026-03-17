@@ -39,6 +39,8 @@ Always ask before running:
 
 This overrides any other guidance about confirming safe git operations.
 
+**Important:** To preserve auto-approval, run each git command as its own Bash tool call. Never chain auto-approved commands with `&&` or prefix with `cd` — compound commands don't match the auto-approved patterns and will trigger manual approval prompts.
+
 ## Worktree Development Workflow
 
 When implementing changes beyond a trivial edit, use a worktree. The bar is low — if it touches more than 2-3 files, involves logic changes, or follows an implementation plan, it goes through a worktree.
