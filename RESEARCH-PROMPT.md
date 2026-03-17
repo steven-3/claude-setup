@@ -29,7 +29,7 @@ Phase 3: SYNTHESIS (1 agent, reads only Phase 2 outputs + Phase 1 summaries)
   └── Agent 11: Final Verdict → OPTIMAL-SETUP-REPORT.md
 ```
 
-All intermediate reports go in `E:/Projects/claude-setup/research/`
+All intermediate reports go in `./research/`
 
 ---
 
@@ -39,7 +39,7 @@ You are the **orchestrator**. You do NOT research anything yourself. You dispatc
 
 ### Step 0: Setup
 ```
-mkdir -p E:/Projects/claude-setup/research
+mkdir -p ./research
 ```
 
 ### Step 1: Dispatch Phase 1 Agents (ALL IN PARALLEL)
@@ -102,7 +102,7 @@ For each, quote the actual content and rate depth 1-5:
 
 ## Output Format
 
-Save your complete analysis to: E:/Projects/claude-setup/research/report-superclaude.md
+Save your complete analysis to: ./research/report-superclaude.md
 
 Structure it EXACTLY as:
 
@@ -198,7 +198,7 @@ For each, quote actual content and rate depth 1-5:
 
 ## Output Format
 
-Save to: E:/Projects/claude-setup/research/report-superpowers.md
+Save to: ./research/report-superpowers.md
 
 Structure EXACTLY as:
 
@@ -300,7 +300,7 @@ You are analyzing Everything Claude Code (ECC) in complete isolation. You have N
 
 ## Output Format
 
-Save to: E:/Projects/claude-setup/research/report-ecc.md
+Save to: ./research/report-ecc.md
 
 Structure EXACTLY as:
 
@@ -354,7 +354,7 @@ You are analyzing the Sequential Thinking MCP Server in isolation.
 4. What problem types benefit from this vs. native Claude reasoning?
 
 ## Output Format
-Save to: E:/Projects/claude-setup/research/report-sequential-thinking.md
+Save to: ./research/report-sequential-thinking.md
 
 Include:
 - How it works (with code quotes)
@@ -381,7 +381,7 @@ You are analyzing claude-mem in isolation.
 6. Token cost per conversation
 
 ## Output Format
-Save to: E:/Projects/claude-setup/research/report-claude-mem.md
+Save to: ./research/report-claude-mem.md
 
 Include:
 - Architecture (with code quotes)
@@ -408,7 +408,7 @@ You are analyzing Serena in isolation.
 5. MCP server integration — what tools does it expose?
 
 ## Output Format
-Save to: E:/Projects/claude-setup/research/report-serena.md
+Save to: ./research/report-serena.md
 
 Include:
 - Architecture and capabilities
@@ -432,7 +432,7 @@ You are analyzing Obsidian as a knowledge system for Claude Code.
 4. Search for: how other developers use Obsidian with AI coding assistants
 
 ## Output Format
-Save to: E:/Projects/claude-setup/research/report-obsidian.md
+Save to: ./research/report-obsidian.md
 
 Include:
 - Available MCP servers/integrations
@@ -454,9 +454,9 @@ Wait for ALL Phase 1 agents to complete. Then dispatch these 3 agents in paralle
 You are a neutral judge comparing three Claude Code enhancement systems. You have NOT read any of their source code — you are working ONLY from standardized analyst reports to avoid bias.
 
 Read these three files:
-- E:/Projects/claude-setup/research/report-superclaude.md
-- E:/Projects/claude-setup/research/report-superpowers.md
-- E:/Projects/claude-setup/research/report-ecc.md
+- ./research/report-superclaude.md
+- ./research/report-superpowers.md
+- ./research/report-ecc.md
 
 ## Your Task
 
@@ -481,7 +481,7 @@ Also assess:
 8. **Token Efficiency**: Which system costs the least context overhead?
 9. **Agent Quality**: Which system has the best agent/subagent architecture?
 
-Save to: E:/Projects/claude-setup/research/comparison-skills.md
+Save to: ./research/comparison-skills.md
 ```
 
 ### AGENT 9: Memory & Persistence Comparison
@@ -490,11 +490,11 @@ Save to: E:/Projects/claude-setup/research/comparison-skills.md
 You are a neutral judge comparing memory and persistence systems for Claude Code. You are working ONLY from analyst reports.
 
 Read these files:
-- E:/Projects/claude-setup/research/report-ecc.md (session persistence + continuous learning sections)
-- E:/Projects/claude-setup/research/report-claude-mem.md
-- E:/Projects/claude-setup/research/report-serena.md
-- E:/Projects/claude-setup/research/report-obsidian.md
-- E:/Projects/claude-setup/research/report-sequential-thinking.md
+- ./research/report-ecc.md (session persistence + continuous learning sections)
+- ./research/report-claude-mem.md
+- ./research/report-serena.md
+- ./research/report-obsidian.md
+- ./research/report-sequential-thinking.md
 
 Also consider Claude Code's built-in memory system (~/.claude/projects/*/memory/MEMORY.md).
 
@@ -523,7 +523,7 @@ Declare:
 - Best knowledge management system (with evidence)
 - Recommended memory architecture (which systems to combine and how)
 
-Save to: E:/Projects/claude-setup/research/comparison-memory.md
+Save to: ./research/comparison-memory.md
 ```
 
 ### AGENT 10: Agent Architecture Comparison
@@ -532,9 +532,9 @@ Save to: E:/Projects/claude-setup/research/comparison-memory.md
 You are a neutral judge comparing agent/subagent architectures. Working ONLY from reports.
 
 Read:
-- E:/Projects/claude-setup/research/report-superclaude.md (agent sections)
-- E:/Projects/claude-setup/research/report-superpowers.md (subagent sections)
-- E:/Projects/claude-setup/research/report-ecc.md (agent sections)
+- ./research/report-superclaude.md (agent sections)
+- ./research/report-superpowers.md (subagent sections)
+- ./research/report-ecc.md (agent sections)
 
 ## Your Task
 
@@ -549,7 +549,7 @@ Compare:
 
 Declare the best agent architecture with evidence.
 
-Save to: E:/Projects/claude-setup/research/comparison-agents.md
+Save to: ./research/comparison-agents.md
 ```
 
 ---
@@ -562,20 +562,20 @@ Save to: E:/Projects/claude-setup/research/comparison-agents.md
 You are producing the definitive recommendation for the optimal Claude Code setup. You have NOT read any source code — you are working ONLY from comparison reports and analyst summaries to ensure unbiased synthesis.
 
 Read ALL of these:
-- E:/Projects/claude-setup/research/comparison-skills.md
-- E:/Projects/claude-setup/research/comparison-memory.md
-- E:/Projects/claude-setup/research/comparison-agents.md
-- E:/Projects/claude-setup/research/report-superclaude.md (Executive Summary + Unique Strengths + Weaknesses only)
-- E:/Projects/claude-setup/research/report-superpowers.md (Executive Summary + Unique Strengths + Weaknesses only)
-- E:/Projects/claude-setup/research/report-ecc.md (Executive Summary + Unique Strengths + Weaknesses only)
-- E:/Projects/claude-setup/research/report-sequential-thinking.md
-- E:/Projects/claude-setup/research/report-claude-mem.md (Executive Summary only)
-- E:/Projects/claude-setup/research/report-serena.md (Executive Summary only)
-- E:/Projects/claude-setup/research/report-obsidian.md (Executive Summary only)
+- ./research/comparison-skills.md
+- ./research/comparison-memory.md
+- ./research/comparison-agents.md
+- ./research/report-superclaude.md (Executive Summary + Unique Strengths + Weaknesses only)
+- ./research/report-superpowers.md (Executive Summary + Unique Strengths + Weaknesses only)
+- ./research/report-ecc.md (Executive Summary + Unique Strengths + Weaknesses only)
+- ./research/report-sequential-thinking.md
+- ./research/report-claude-mem.md (Executive Summary only)
+- ./research/report-serena.md (Executive Summary only)
+- ./research/report-obsidian.md (Executive Summary only)
 
 ## Produce the Final Report
 
-Save to: E:/Projects/claude-setup/OPTIMAL-SETUP-REPORT.md
+Save to: ./OPTIMAL-SETUP-REPORT.md
 
 ### Required Sections:
 

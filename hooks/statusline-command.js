@@ -13,7 +13,7 @@ process.stdin.on('end', () => {
   try { data = JSON.parse(input); } catch {}
 
   // --- Data collection ---
-  const user = process.env.USER || process.env.USERNAME || 'steve';
+  const user = process.env.USER || process.env.USERNAME || 'user';
   const host = process.env.HOSTNAME || process.env.COMPUTERNAME || '';
 
   let cwd = data?.workspace?.current_dir || data?.cwd || process.cwd();

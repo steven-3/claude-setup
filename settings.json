@@ -2,10 +2,46 @@
   "permissions": {
     "allow": [
       "mcp__pencil",
-      "Bash(git*)",
+
       "Bash(gh*)",
-      "Bash(cd*&&*git*)",
-      "Bash(cd*&&*gh*)"
+      "Bash(cd*&&*gh*)",
+
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git blame*)",
+      "Bash(git rev-parse*)",
+      "Bash(git symbolic-ref*)",
+      "Bash(git remote*)",
+      "Bash(git ls-files*)",
+      "Bash(git shortlog*)",
+      "Bash(git branch --list*)",
+      "Bash(git branch -a*)",
+      "Bash(git branch -r*)",
+      "Bash(git tag -l*)",
+      "Bash(git tag --list*)",
+      "Bash(git config --get*)",
+
+      "Bash(git add *)",
+      "Bash(git add .*)",
+      "Bash(git add -A*)",
+      "Bash(git add -u*)",
+      "Bash(git commit -m *)",
+      "Bash(git worktree add *)",
+      "Bash(git worktree list*)",
+      "Bash(git stash*)",
+      "Bash(git branch *)",
+
+      "Bash(cd*&&*git status*)",
+      "Bash(cd*&&*git diff*)",
+      "Bash(cd*&&*git log*)",
+      "Bash(cd*&&*git add*)",
+      "Bash(cd*&&*git commit -m*)",
+      "Bash(git add*&&*git commit -m*)",
+      "Bash(git add*&&*git status*)",
+      "Bash(git commit*&&*git status*)",
+      "Bash(git add*&&*git commit*&&*git status*)"
     ]
   },
   "enabledPlugins": {
@@ -59,5 +95,5 @@
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
   "voiceEnabled": true,
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": false
 }

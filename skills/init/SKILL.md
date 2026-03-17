@@ -41,6 +41,48 @@ Always use the GitHub CLI (`gh`) instead of raw `git` commands when available:
 - `gh pr merge` instead of `git merge`
 - `gh issue list/create/view` for issue management
 
+## Git Permissions
+
+Execute these git operations immediately without asking for confirmation:
+- **Read-only**: status, diff, log, show, blame, rev-parse, symbolic-ref, remote, ls-files, shortlog, branch listing, tag listing, config --get
+- **Non-destructive writes**: add, commit (new commits only), worktree add, worktree list, stash, branch create
+
+Always ask before running:
+- push, pull, fetch
+- reset, revert, checkout (discarding changes), restore
+- commit --amend
+- rebase, merge
+- branch -d / -D (delete)
+- clean
+- any --force or --hard flag
+
+This overrides any other guidance about confirming safe git operations.
+
+## Worktree Development Workflow
+
+When implementing changes beyond a trivial edit, use a worktree. The bar is low — if it touches more than 2-3 files, involves logic changes, or follows an implementation plan, it goes through a worktree.
+
+Always use **subagent-driven development** for implementation.
+
+### Process (runs fully autonomously — no approval needed at any step)
+
+1. **Create worktree** from the current local branch:
+   `git worktree add -b <descriptive-branch> .worktrees/<branch-name> HEAD`
+2. **Implement** all changes in the worktree using subagent-driven development
+3. **Commit** all work in the worktree
+4. **Review** — run the superpowers `code-reviewer` agent against the changes
+5. **Fix everything** — address ALL issues (critical, minor, style, naming — everything). Do not ask. Fix all. Re-review until clean.
+6. **Merge back** — merge the worktree branch into the branch it was created from
+7. **Clean up** — `git worktree remove` + `git branch -d`
+
+### Rules
+
+- Worktree branch must be created from and merged back into the **same branch** you are on locally. Never a different branch.
+- `git merge`, `git worktree remove`, `git branch -d` are auto-approved **only** within this workflow. Otherwise they require approval.
+- Code reviewer must find zero issues before merging. Fix and re-review until clean.
+- Never skip review. Never skip "minor" fixes. Every finding gets fixed.
+- The entire process executes without stopping to ask for permission.
+
 ## MCP Servers
 Use these naturally when relevant — don't wait to be asked.
 
