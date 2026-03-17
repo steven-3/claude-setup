@@ -2,7 +2,7 @@
 // Claude Code status line — sleek terminal aesthetic
 
 const { execSync } = require('child_process');
-const { readFileSync } = require('fs');
+const { readFileSync, statSync, openSync, readSync, closeSync } = require('fs');
 const { join } = require('path');
 
 let input = '';
@@ -50,6 +50,56 @@ process.stdin.on('end', () => {
     const url = mcp?.mcpServers?.supabase?.url || '';
     const m = url.match(/project_ref=([a-z0-9]+)/);
     if (m) supabaseRef = m[1];
+  } catch {}
+
+  // --- Subagent detection (parse transcript tail) ---
+  let activeAgents = [];
+  try {
+    const tp = data?.transcript_path;
+    if (tp) {
+      const tpUnix = tp.replace(/\\/g, '/');
+      const stat = statSync(tpUnix);
+      const TAIL_BYTES = Math.min(stat.size, 128 * 1024); // read last 128KB
+      const buf = Buffer.alloc(TAIL_BYTES);
+      const fd = openSync(tpUnix, 'r');
+      readSync(fd, buf, 0, TAIL_BYTES, stat.size - TAIL_BYTES);
+      closeSync(fd);
+      const tail = buf.toString('utf8');
+      // Split into lines, skip partial first line
+      const lines = tail.split('\n');
+      if (stat.size > TAIL_BYTES) lines.shift();
+
+      const agentCalls = new Map(); // tool_use id -> description
+      const completedIds = new Set();
+
+      for (const line of lines) {
+        if (!line) continue;
+        try {
+          const entry = JSON.parse(line);
+          // Find Agent tool_use in assistant messages
+          if (entry.type === 'assistant' && entry.message?.content) {
+            for (const c of entry.message.content) {
+              if (c.type === 'tool_use' && c.name === 'Agent') {
+                agentCalls.set(c.id, c.input?.description || 'agent');
+              }
+            }
+          }
+          // Find tool_result matching agent calls
+          if (entry.type === 'user' && entry.message?.content) {
+            const arr = Array.isArray(entry.message.content) ? entry.message.content : [];
+            for (const c of arr) {
+              if (c.type === 'tool_result' && agentCalls.has(c.tool_use_id)) {
+                completedIds.add(c.tool_use_id);
+              }
+            }
+          }
+        } catch {}
+      }
+
+      for (const [id, desc] of agentCalls) {
+        if (!completedIds.has(id)) activeAgents.push(desc);
+      }
+    }
   } catch {}
 
   const usedPct = data?.context_window?.used_percentage;
@@ -132,6 +182,13 @@ process.stdin.on('end', () => {
 
   if (supabaseRef) {
     parts2.push(`${CORAL}◈ ${R}${GRAY}sb:${R}${CORAL}${supabaseRef}${R}`);
+  }
+
+  if (activeAgents.length) {
+    const CYAN = c(81);
+    const names = activeAgents.map(d => d.length > 20 ? d.slice(0, 18) + '..' : d).join(', ');
+    const spinner = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'][Math.floor(Date.now() / 100) % 10];
+    parts2.push(`${CYAN}${spinner} ${activeAgents.length} agent${activeAgents.length > 1 ? 's' : ''}${R}${GRAY}: ${names}${R}`);
   }
 
   if (cost) {
