@@ -70,11 +70,14 @@ else
 fi
 mkdir -p "$CLAUDE_DIR/sessions"
 
-# Install living-docs skill
+# Install skills
 SKILLS_DIR="$CLAUDE_DIR/skills"
 mkdir -p "$SKILLS_DIR/living-docs"
 cp "$SCRIPT_DIR/skills/living-docs/SKILL.md" "$SKILLS_DIR/living-docs/SKILL.md"
 echo "  Installed living-docs skill"
+mkdir -p "$SKILLS_DIR/init"
+cp "$SCRIPT_DIR/skills/init/SKILL.md" "$SKILLS_DIR/init/SKILL.md"
+echo "  Installed init skill (run /init in any project)"
 echo "  Done."
 
 # ── 5. MCP Servers ──────────────────────────────────────────
