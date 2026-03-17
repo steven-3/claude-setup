@@ -61,10 +61,7 @@ Use the superpowers `/using-git-worktrees` skill for worktree creation. It handl
 - Dependency installation (auto-detects package.json, Cargo.toml, etc.)
 - Baseline test verification (reports failures before work begins)
 
-The branch must be created from the **current local branch** using `HEAD`:
-```bash
-git worktree add -b <descriptive-branch> .worktrees/<branch-name> HEAD
-```
+**Constraint:** The skill must branch from `HEAD` (the current local branch), never from a remote ref.
 
 ### Process (runs fully autonomously — no approval needed at any step)
 
@@ -73,12 +70,10 @@ git worktree add -b <descriptive-branch> .worktrees/<branch-name> HEAD
 3. **Commit** all work in the worktree
 4. **Review** — run the superpowers `code-reviewer` agent against the changes
 5. **Fix everything** — address ALL issues found by the reviewer (critical, minor, style, naming — everything). Do not ask what to fix. Fix all of them. Then re-review until the reviewer passes clean.
-6. **Finish** — invoke `/finishing-a-development-branch` to merge back and clean up. Default action is merge into the originating branch:
-   ```bash
-   git merge <worktree-branch>
-   git worktree remove .worktrees/<branch-name>
-   git branch -d <worktree-branch>
-   ```
+6. **Finish** — invoke `/finishing-a-development-branch` to merge back and clean up. The skill handles:
+   - Merging the worktree branch into the originating branch
+   - Removing the worktree directory
+   - Deleting the temporary branch
 
 ### Rules
 
