@@ -53,22 +53,29 @@ When implementing changes beyond a trivial edit, use a worktree. The bar is low 
 
 Always use **subagent-driven development** for implementation.
 
+### Setup
+
+Use the superpowers `/using-git-worktrees` skill for worktree creation. It handles:
+- Directory selection (`.worktrees/` preferred, already configured)
+- `.gitignore` safety verification (adds entry + commits if missing)
+- Dependency installation (auto-detects package.json, Cargo.toml, etc.)
+- Baseline test verification (reports failures before work begins)
+
+The branch must be created from the **current local branch** using `HEAD`:
+```bash
+git worktree add -b <descriptive-branch> .worktrees/<branch-name> HEAD
+```
+
 ### Process (runs fully autonomously — no approval needed at any step)
 
-1. **Create worktree** from the current local branch:
-   ```bash
-   git worktree add -b <descriptive-branch> .worktrees/<branch-name> HEAD
-   ```
+1. **Create worktree** — invoke `/using-git-worktrees` as described above
 2. **Implement** all changes in the worktree directory using subagent-driven development
 3. **Commit** all work in the worktree
 4. **Review** — run the superpowers `code-reviewer` agent against the changes
 5. **Fix everything** — address ALL issues found by the reviewer (critical, minor, style, naming — everything). Do not ask what to fix. Fix all of them. Then re-review until the reviewer passes clean.
-6. **Merge back** — from the original directory, merge the worktree branch into the branch it was created from:
+6. **Finish** — invoke `/finishing-a-development-branch` to merge back and clean up. Default action is merge into the originating branch:
    ```bash
    git merge <worktree-branch>
-   ```
-7. **Clean up** — remove the worktree and delete the temporary branch:
-   ```bash
    git worktree remove .worktrees/<branch-name>
    git branch -d <worktree-branch>
    ```
