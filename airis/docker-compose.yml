@@ -16,7 +16,7 @@ services:
       - --port
       - "8000"
       - --context
-      - ide-assistant
+      - claude-code
     expose:
       - "8000"
     volumes:
