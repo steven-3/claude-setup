@@ -23,6 +23,10 @@
       }
     }
   },
+  "statusLine": {
+    "type": "command",
+    "command": "node ~/.claude/hooks/statusline-command.js"
+  },
   "hooks": {
     "SessionStart": [
       {

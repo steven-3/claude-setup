@@ -57,6 +57,7 @@ mkdir -p "$HOOKS_DIR"
 cp "$SCRIPT_DIR/hooks/session-start.js" "$HOOKS_DIR/session-start.js"
 cp "$SCRIPT_DIR/hooks/session-end.js" "$HOOKS_DIR/session-end.js"
 cp "$SCRIPT_DIR/hooks/cost-tracker.js" "$HOOKS_DIR/cost-tracker.js"
+cp "$SCRIPT_DIR/hooks/statusline-command.js" "$HOOKS_DIR/statusline-command.js"
 
 # Install hooks.json if not already customized
 if [ ! -f "$CLAUDE_DIR/hooks.json" ]; then
