@@ -32,7 +32,7 @@ Restart Claude Code after setup completes.
 | `hooks/cost-tracker.js` | `~/.claude/hooks/` | Appends cost data to `~/.claude/cost-log.jsonl` |
 | `hooks/statusline-command.js` | `~/.claude/hooks/` | Two-line colored status bar with metrics |
 | `hooks.json` | `~/.claude/hooks.json` | Hook event definitions (skipped if already exists) |
-| `skills/living-docs/SKILL.md` | `~/.claude/skills/living-docs/` | Auto-syncs architecture.md and DESIGN.md |
+| `skills/living-docs/SKILL.md` | `~/.claude/skills/living-docs/` | Auto-syncs ARCHITECTURE.md and DESIGN.md |
 | `airis/docker-compose.yml` | `~/.claude/airis-mcp-gateway/` | Docker stack for MCP servers |
 | `airis/mcp-config.json` | `~/.claude/airis-mcp-gateway/` | MCP server registry |
 | `templates/CLAUDE.md` | `~/.claude/templates/CLAUDE.md` | Starter CLAUDE.md for new projects |

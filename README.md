@@ -52,7 +52,7 @@ The new settings, hooks, plugins, and status line take effect after restarting.
 | **Session Hooks** | Auto-save/load session context between conversations |
 | **Status Line** | 2-line colored display: model, branch, context usage, active agents, cost |
 | **MCP Servers** | Serena, Context7, Playwright, Tavily, chrome-devtools, shadcn (Docker or Direct) |
-| **Living Docs** | Auto-syncs architecture.md and DESIGN.md with code changes |
+| **Living Docs** | Auto-syncs ARCHITECTURE.md and DESIGN.md with code changes |
 | **CLAUDE.md Template** | Starter instructions for any new project |
 | **/init skill** | Run `/init` in any project to scaffold CLAUDE.md with auto-detection |
 
