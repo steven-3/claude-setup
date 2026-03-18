@@ -194,15 +194,24 @@ function classifySegment(raw, { inWorktree = false } = {}) {
   return "ask";
 }
 
-// Detect if a cd target points into a worktree directory
-function detectWorktreeFromCd(segments) {
+// Detect if any segment references a worktree directory
+function detectWorktreeContext(segments) {
   for (const seg of segments) {
     const trimmed = seg.trim();
+    // cd into a worktree
     if (trimmed.startsWith("cd ")) {
       const target = trimmed.slice(3).trim().replace(/^["']|["']$/g, "");
       if (/[/\\]\.worktrees?[/\\]/.test(target) || /^\.worktrees?[/\\]/.test(target)) {
         return true;
       }
+    }
+    // git worktree remove targeting a .worktrees/ path
+    if (/git\s+worktree\s+remove\s+.*\.worktrees?[/\\]/.test(trimmed)) {
+      return true;
+    }
+    // git worktree remove with a relative .worktrees path
+    if (/git\s+worktree\s+remove\s+\.worktrees?[/\\]/.test(trimmed)) {
+      return true;
     }
   }
   return false;
@@ -268,7 +277,7 @@ function classifyCommand(command, { cwdInWorktree = false } = {}) {
   if (current.trim()) segments.push(current);
 
   // Detect if any cd segment targets a worktree directory, or CWD is already in one
-  const inWorktree = cwdInWorktree || detectWorktreeFromCd(segments);
+  const inWorktree = cwdInWorktree || detectWorktreeContext(segments);
 
   // Classify each segment — if ANY is "ask", the whole command is "ask"
   for (const seg of segments) {
