@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Session End Hook - Saves session summary for next session
-// Based on ECC minimal session persistence pattern
+// Session End Hook — saves session summary for next session
 // Fires on: Stop
 
 const fs = require("fs");
@@ -11,16 +10,25 @@ const { execSync } = require("child_process");
 const SESSION_DIR = path.join(os.homedir(), ".claude", "sessions");
 const MAX_SESSIONS = 20;
 
+// ─── Git info collection ────────────────────────────────────────────────────
+
 function getGitInfo(cwd) {
   try {
-    const branch = execSync("git rev-parse --abbrev-ref HEAD", { cwd, encoding: "utf-8" }).trim();
-    const diff = execSync("git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only", { cwd, encoding: "utf-8" }).trim();
+    const branch = execSync("git rev-parse --abbrev-ref HEAD", {
+      cwd, encoding: "utf-8",
+    }).trim();
+    const diff = execSync(
+      "git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only",
+      { cwd, encoding: "utf-8" },
+    ).trim();
     const filesModified = diff ? diff.split("\n").filter(Boolean) : [];
     return { branch, filesModified };
   } catch {
     return { branch: null, filesModified: [] };
   }
 }
+
+// ─── Session cleanup ─────────────────────────────────────────────────────────
 
 function cleanOldSessions() {
   if (!fs.existsSync(SESSION_DIR)) return;
@@ -39,13 +47,14 @@ function cleanOldSessions() {
   }
 }
 
+// ─── Main ────────────────────────────────────────────────────────────────────
+
 function main() {
   fs.mkdirSync(SESSION_DIR, { recursive: true });
 
   const cwd = process.env.PROJECT_DIR || process.cwd();
   const gitInfo = getGitInfo(cwd);
 
-  // Read transcript hint from environment if available
   const summary = process.env.SESSION_SUMMARY || "Session ended (no summary provided)";
 
   const session = {
@@ -53,9 +62,9 @@ function main() {
     project: cwd,
     branch: gitInfo.branch,
     filesModified: gitInfo.filesModified,
-    summary: summary,
+    summary,
     decisions: [],
-    nextSteps: ""
+    nextSteps: "",
   };
 
   const filename = `session-${Date.now()}.json`;

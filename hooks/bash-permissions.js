@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 // PreToolUse hook for Bash — classifies commands as safe or needing approval.
-// Splits compound commands on && || ; and checks each segment.
+// Splits compound commands on && || ; and checks each segment (including pipes).
 // Returns permissionDecision: "allow" | "ask"
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+// Filesystem + shell read-only commands (match by first word or first two words)
 const SAFE_READ_COMMANDS = [
   // Filesystem read-only
   "ls", "cat", "head", "tail", "find", "tree", "du", "df", "wc",
@@ -17,13 +20,13 @@ const SAFE_READ_COMMANDS = [
   // System info
   "uname", "whoami", "hostname", "date", "env", "printenv",
   "nproc", "free", "uptime", "id",
-  // Node/npm/npx
+  // Node/npm/npx (two-word matches)
   "node -e", "node -p", "npm ls", "npm list", "npm view", "npm info",
   "npx which", "npx tsc", "npx eslint", "npx prettier", "npx vitest",
   "npx jest", "npx tsx", "npx ts-node",
 ];
 
-// Commands that are safe but need prefix matching (not just first word)
+// Prefix-matched safe commands (not just first word)
 const SAFE_PREFIXES = [
   "sed -n",        // read-only sed
   "sed -e",        // expression sed (read-only when no -i)
@@ -31,7 +34,14 @@ const SAFE_PREFIXES = [
   "[ ",            // test
 ];
 
-// Git commands split into safe read-only and safe non-destructive writes
+// Safe write commands (mkdir, touch, etc.) — still checked against DANGEROUS_PATTERNS
+const SAFE_WRITE_COMMANDS = [
+  "mkdir", "touch", "cp", "mv",
+];
+
+// ─── Git classification lists ────────────────────────────────────────────────
+
+// Git read-only subcommands (always auto-approved)
 const GIT_SAFE_READ = [
   "status", "diff", "log", "show", "blame", "rev-parse", "symbolic-ref",
   "remote", "ls-files", "shortlog", "tag -l", "tag --list", "config --get",
@@ -40,22 +50,25 @@ const GIT_SAFE_READ = [
   "branch -r", "branch --list", "branch -l", "branch -v",
 ];
 
+// Git non-destructive write subcommands (always auto-approved)
 const GIT_SAFE_WRITE = [
   "add", "commit", "stash", "worktree add", "worktree list",
   "branch -m",
 ];
 
-// These git commands are only auto-approved inside a worktree directory
+// Git commands auto-approved ONLY inside a worktree directory
 const GIT_WORKTREE_ONLY = [
   "worktree remove", "worktree prune", "merge", "branch -d",
 ];
 
-// Always denied — these need human approval
+// Git commands that always require human approval
 const GIT_DANGEROUS = [
   "push", "pull", "fetch", "reset", "revert", "rebase", "clean",
   "checkout -- ", "checkout .", "restore",
   "branch -D",
 ];
+
+// ─── Dangerous patterns (checked across all command types) ───────────────────
 
 const DANGEROUS_PATTERNS = [
   /--force/,
@@ -64,14 +77,11 @@ const DANGEROUS_PATTERNS = [
   /\brm\b/,
   /\brmdir\b/,
   /\bdel\b/,
-  /> \/dev\/null/,  // allow redirects TO /dev/null (safe)
+  /> \/dev\/null/,  // allow redirects TO /dev/null (safe) — but flag suspicious redirects
 ];
 
-const SAFE_WRITE_COMMANDS = [
-  "mkdir", "touch", "cp", "mv",
-];
+// ─── GitHub CLI patterns ─────────────────────────────────────────────────────
 
-// gh CLI subcommands that are destructive or affect shared state
 const GH_DANGEROUS_PATTERNS = [
   /^gh\s+pr\s+merge/,
   /^gh\s+pr\s+close/,
@@ -85,56 +95,57 @@ const GH_DANGEROUS_PATTERNS = [
   /^gh\s+api\s+--method\s+(DELETE|PUT|PATCH|POST)/,
 ];
 
-// gh read commands and safe operations
-function isGhCommand(cmd) {
-  if (!cmd.startsWith("gh ")) return false;
-  for (const p of GH_DANGEROUS_PATTERNS) {
-    if (p.test(cmd)) return "ask";
-  }
-  return "allow";
-}
+// ─── Git global flag stripping ───────────────────────────────────────────────
+// Strips flags like -C <path>, -c <key=val>, --git-dir, --work-tree, --no-pager
+// that appear before the actual git subcommand.
 
-// Strip git global options that appear before the subcommand
-// e.g., git -C /path log → log, git --no-pager diff → diff
 function stripGitGlobalFlags(gitArgs) {
   let args = gitArgs;
-  // Flags that consume the next argument: -C <path>, -c <key=value>, --git-dir <path>, --work-tree <path>
+  // Flags that consume the next argument
   args = args.replace(/^(-C\s+"[^"]*"|-C\s+'[^']*'|-C\s+\S+)\s*/g, "");
   args = args.replace(/^(-c\s+"[^"]*"|-c\s+'[^']*'|-c\s+\S+)\s*/g, "");
   args = args.replace(/^(--git-dir[= ]\S+)\s*/g, "");
   args = args.replace(/^(--work-tree[= ]\S+)\s*/g, "");
-  // Standalone flags: --no-pager, --bare, --no-replace-objects, --literal-pathspecs
+  // Standalone flags
   args = args.replace(/^(--no-pager|--bare|--no-replace-objects|--literal-pathspecs|--no-optional-locks)\s*/g, "");
   // Recurse in case multiple global flags are chained
   if (args !== gitArgs) return stripGitGlobalFlags(args);
   return args;
 }
 
-function isGitCommand(cmd, { inWorktree = false } = {}) {
-  if (!cmd.startsWith("git ")) return false;
+// ─── Command classifiers ─────────────────────────────────────────────────────
+
+function classifyGhCommand(cmd) {
+  for (const pattern of GH_DANGEROUS_PATTERNS) {
+    if (pattern.test(cmd)) return "ask";
+  }
+  return "allow";
+}
+
+function classifyGitCommand(cmd, { inWorktree = false } = {}) {
   const gitCmd = stripGitGlobalFlags(cmd.slice(4).trim());
 
-  // Check dangerous first (takes priority)
+  // Dangerous subcommands take priority
   for (const d of GIT_DANGEROUS) {
     if (gitCmd.startsWith(d)) return "ask";
   }
 
-  // Check dangerous patterns
+  // Dangerous patterns (--force, --hard, rm, etc.)
   for (const p of DANGEROUS_PATTERNS) {
     if (p.test(cmd)) return "ask";
   }
 
-  // Check safe read
+  // Safe read-only subcommands
   for (const r of GIT_SAFE_READ) {
     if (gitCmd.startsWith(r)) return "allow";
   }
 
-  // Check safe write (always allowed)
+  // Safe write subcommands
   for (const w of GIT_SAFE_WRITE) {
     if (gitCmd.startsWith(w)) return "allow";
   }
 
-  // Worktree-only commands — only auto-approve inside a worktree dir
+  // Worktree-only commands — auto-approve only inside a worktree dir
   for (const w of GIT_WORKTREE_ONLY) {
     if (gitCmd.startsWith(w)) return inWorktree ? "allow" : "ask";
   }
@@ -147,39 +158,38 @@ function isGitCommand(cmd, { inWorktree = false } = {}) {
 }
 
 function isSedSafe(cmd) {
-  // sed is safe if it does NOT have -i (in-place) flag
-  // sed -n, sed -e without -i are read-only
+  // sed is safe only when it does NOT have -i (in-place edit)
   return /^sed\s/.test(cmd) && !/-i/.test(cmd);
 }
 
+// Classify a single command segment (no pipes, no compound operators)
 function classifySegment(raw, { inWorktree = false } = {}) {
   const cmd = raw.trim();
   if (!cmd || cmd === "true" || cmd === "false") return "allow";
 
-  // Strip leading environment variable assignments: FOO=bar cmd ...
+  // Strip leading environment variable assignments: FOO=bar BAZ=qux cmd ...
   const withoutEnv = cmd.replace(/^(\w+=\S+\s+)+/, "");
 
   // gh CLI
-  if (withoutEnv.startsWith("gh ")) return isGhCommand(withoutEnv);
+  if (withoutEnv.startsWith("gh ")) return classifyGhCommand(withoutEnv);
 
   // git
-  if (withoutEnv.startsWith("git ")) return isGitCommand(withoutEnv, { inWorktree });
+  if (withoutEnv.startsWith("git ")) return classifyGitCommand(withoutEnv, { inWorktree });
 
-  // sed special handling
+  // sed special handling (safe only without -i)
   if (withoutEnv.startsWith("sed ")) return isSedSafe(withoutEnv) ? "allow" : "ask";
 
-  // Safe prefixes
+  // Safe prefixes (sed -n, [[ , etc.)
   for (const p of SAFE_PREFIXES) {
     if (withoutEnv.startsWith(p)) return "allow";
   }
 
-  // Safe read commands (match first word)
+  // Safe read commands — match first word
   const firstWord = withoutEnv.split(/\s/)[0];
   if (SAFE_READ_COMMANDS.includes(firstWord)) return "allow";
 
-  // Safe write commands
+  // Safe write commands — still check dangerous patterns
   if (SAFE_WRITE_COMMANDS.includes(firstWord)) {
-    // Check for dangerous patterns even in "safe" commands
     for (const p of DANGEROUS_PATTERNS) {
       if (p.test(cmd)) return "ask";
     }
@@ -194,7 +204,10 @@ function classifySegment(raw, { inWorktree = false } = {}) {
   return "ask";
 }
 
-// Detect if any segment references a worktree directory
+// ─── Worktree context detection ──────────────────────────────────────────────
+// Checks if any segment cd's into a .worktrees/ path or references one in
+// a git worktree command.
+
 function detectWorktreeContext(segments) {
   for (const seg of segments) {
     const trimmed = seg.trim();
@@ -216,6 +229,10 @@ function detectWorktreeContext(segments) {
   }
   return false;
 }
+
+// ─── Compound command parser ─────────────────────────────────────────────────
+// Splits on && || ; while respecting single and double quotes.
+// Then splits each segment on pipes. If ANY part is "ask", the whole command is "ask".
 
 function classifyCommand(command, { cwdInWorktree = false } = {}) {
   // Split compound commands on && || ; while respecting quotes
@@ -276,7 +293,7 @@ function classifyCommand(command, { cwdInWorktree = false } = {}) {
   }
   if (current.trim()) segments.push(current);
 
-  // Detect if any cd segment targets a worktree directory, or CWD is already in one
+  // Detect worktree context from cd targets or CWD
   const inWorktree = cwdInWorktree || detectWorktreeContext(segments);
 
   // Classify each segment — if ANY is "ask", the whole command is "ask"
@@ -284,7 +301,7 @@ function classifyCommand(command, { cwdInWorktree = false } = {}) {
     const trimmed = seg.trim();
     if (!trimmed) continue;
 
-    // Handle pipes within a segment
+    // Split pipes within segment (quote-aware)
     const pipeParts = [];
     let pipeCurrent = "";
     let pInSingle = false;
@@ -292,8 +309,8 @@ function classifyCommand(command, { cwdInWorktree = false } = {}) {
 
     for (let i = 0; i < trimmed.length; i++) {
       const ch = trimmed[i];
-      if (ch === "'" && !pInDouble) { pInSingle = !pInSingle; }
-      if (ch === '"' && !pInSingle) { pInDouble = !pInDouble; }
+      if (ch === "'" && !pInDouble) pInSingle = !pInSingle;
+      if (ch === '"' && !pInSingle) pInDouble = !pInDouble;
       if (ch === "|" && trimmed[i + 1] !== "|" && !pInSingle && !pInDouble) {
         pipeParts.push(pipeCurrent);
         pipeCurrent = "";
@@ -303,7 +320,7 @@ function classifyCommand(command, { cwdInWorktree = false } = {}) {
     }
     pipeParts.push(pipeCurrent);
 
-    // Check each pipe segment
+    // Check each pipe part
     for (const pipePart of pipeParts) {
       const result = classifySegment(pipePart, { inWorktree });
       if (result === "ask") {
@@ -314,6 +331,8 @@ function classifyCommand(command, { cwdInWorktree = false } = {}) {
 
   return { decision: "allow" };
 }
+
+// ─── Main ────────────────────────────────────────────────────────────────────
 
 function main() {
   let input = "";
