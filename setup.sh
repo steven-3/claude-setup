@@ -10,8 +10,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
 HOOKS_DIR="$CLAUDE_DIR/hooks"
 AIRIS_DIR="$HOME/.claude/airis-mcp-gateway"
+VERSION=$(cat "$SCRIPT_DIR/VERSION")
 
-echo "=== Claude Code Optimal Setup ==="
+echo "=== Claude Code Optimal Setup v${VERSION} ==="
 echo ""
 
 # ── 1. Settings ──────────────────────────────────────────────
@@ -55,10 +56,10 @@ if [ -d "$HOME/.superclaude" ] && [ ! -d "$HOME/.superclaude/airis-mcp-gateway" 
     echo "  WARNING: ~/.superclaude exists but may contain non-AIRIS data."
     echo "  Review and remove manually if no longer needed."
 fi
-# Remove old /init skill (renamed to /sm:init)
+# Remove old /init skill (renamed to /supermind:init)
 if [ -d "$CLAUDE_DIR/skills/init" ]; then
     rm -rf "$CLAUDE_DIR/skills/init"
-    echo "  Removed old /init skill (now /sm:init)"
+    echo "  Removed old /init skill (now /supermind:init)"
 fi
 echo "  Done."
 
@@ -82,7 +83,7 @@ else
 fi
 mkdir -p "$CLAUDE_DIR/sessions"
 
-# Install skills (Supermind — /sm:*)
+# Install skills (Supermind — /supermind:*)
 SKILLS_DIR="$CLAUDE_DIR/skills"
 # Remove old skill paths from previous versions
 rm -rf "$SKILLS_DIR/init" "$SKILLS_DIR/sm" "$SKILLS_DIR/living-docs" 2>/dev/null
@@ -93,7 +94,7 @@ cp "$SCRIPT_DIR/skills/supermind/init/SKILL.md" "$SKILLS_DIR/supermind/init/SKIL
 cp "$SCRIPT_DIR/skills/supermind/init/architecture-template.md" "$SKILLS_DIR/supermind/init/architecture-template.md"
 cp "$SCRIPT_DIR/skills/supermind/init/design-template.md" "$SKILLS_DIR/supermind/init/design-template.md"
 cp "$SCRIPT_DIR/skills/supermind/living-docs/SKILL.md" "$SKILLS_DIR/supermind/living-docs/SKILL.md"
-echo "  Installed supermind skills (/sm:init, /sm:living-docs)"
+echo "  Installed supermind skills (/supermind:init, /supermind:living-docs)"
 echo "  Done."
 
 # ── 5. MCP Servers ──────────────────────────────────────────
@@ -326,7 +327,10 @@ echo "  Done."
 
 # ── Verify ──────────────────────────────────────────────────
 echo ""
-echo "=== Setup complete! ==="
+# Write installed version
+echo "$VERSION" > "$CLAUDE_DIR/.claude-setup-version"
+
+echo "=== Setup complete (v${VERSION})! ==="
 echo ""
 echo "Architecture:"
 echo "  Base skills:   Superpowers (auto-trigger, enforcement, TDD, debugging)"

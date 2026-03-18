@@ -1,6 +1,6 @@
 ---
-name: init
-description: Initialize or update a project — CLAUDE.md merge, tech stack detection, ARCHITECTURE.md and optional DESIGN.md generation. Run /sm:init in any project.
+name: supermind:init
+description: Initialize or update a project — CLAUDE.md merge, tech stack detection, ARCHITECTURE.md and optional DESIGN.md generation. Run /supermind:init in any project.
 ---
 
 # Project Initialization
