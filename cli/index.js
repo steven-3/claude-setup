@@ -8,6 +8,7 @@ const COMMANDS = {
   update: () => require('./commands/update'),
   doctor: () => require('./commands/doctor'),
   uninstall: () => require('./commands/uninstall'),
+  approve: () => require('./commands/approve'),
 };
 
 function parseArgs(argv) {
@@ -22,6 +23,8 @@ function parseArgs(argv) {
     if (arg === '--non-interactive') { flags.nonInteractive = true; continue; }
     if (arg === '--yes' || arg === '-y') { flags.yes = true; continue; }
     if (arg === '--mcp' && args[i + 1]) { flags.mcp = args[++i]; continue; }
+    if (arg === '--list' || arg === '-l') { flags.list = true; continue; }
+    if (arg === '--remove' || arg === '-r') { flags.remove = true; continue; }
     if (!arg.startsWith('-') && COMMANDS[arg]) { command = arg; continue; }
   }
 
@@ -39,6 +42,7 @@ function showHelp() {
     update      Refresh hooks, skills, and templates
     doctor      Verify installation health
     uninstall   Remove all Supermind components
+    approve     Manage auto-approved commands
 
   Options:
     --non-interactive   Skip all prompts, use defaults

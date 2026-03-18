@@ -25,7 +25,7 @@ A PreToolUse hook (`bash-permissions.js`) handles all Bash permission classifica
 - **Read-only shell**: ls, cat, head, tail, find, sed (without -i), grep, echo, pwd, jq, etc.
 - **Safe writes**: mkdir, touch, cp, mv
 - **Read-only git**: status, diff, log, show, blame, rev-parse, check-ignore, branch listing, tag listing, config
-- **Non-destructive git writes**: add, commit, stash, worktree add, worktree list, branch create
+- **Non-destructive git writes**: add, commit, stash (push/save/list/show), worktree add, worktree list, branch create
 - **gh CLI**: read-only gh commands (pr list/view/diff, issue list/view, repo view, etc. — not merge, close, delete)
 
 **Worktree-only** (auto-approved only when `cd` targets a `.worktrees/` path or CWD is inside one):
@@ -33,8 +33,11 @@ A PreToolUse hook (`bash-permissions.js`) handles all Bash permission classifica
 
 **Always requires approval**:
 - push, pull, fetch, reset, revert, rebase, clean, checkout (discarding), restore, branch -D
+- stash drop, stash pop, stash clear (destructive stash operations)
 - Any command with --force or --hard
 - rm, rmdir, del
+
+**User-approved commands**: The file `~/.claude/supermind-approved.json` contains commands the user has permanently approved. If asked to approve a command permanently, edit this file to add the command string. Manage via `npx supermind-claude approve "command"`.
 
 Compound commands with `&&`, `||`, `;` and pipes are fully supported — no need to split into separate calls.
 

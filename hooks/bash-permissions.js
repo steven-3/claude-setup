@@ -3,6 +3,43 @@
 // Splits compound commands on && || ; and checks each segment (including pipes).
 // Returns permissionDecision: "allow" | "ask"
 
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+// ─── User-approved commands ──────────────────────────────────────────────────
+// Reads ~/.claude/supermind-approved.json — an array of command strings/patterns
+// that the user has explicitly approved for auto-allow.
+
+const APPROVED_FILE = path.join(os.homedir(), '.claude', 'supermind-approved.json');
+
+function loadApprovedCommands() {
+  try {
+    const data = JSON.parse(fs.readFileSync(APPROVED_FILE, 'utf-8'));
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function isUserApproved(cmd) {
+  const approved = loadApprovedCommands();
+  const trimmed = cmd.trim();
+  for (const pattern of approved) {
+    // Exact match
+    if (trimmed === pattern) return true;
+    // Prefix match (e.g., "git push" approves "git push origin main")
+    if (trimmed.startsWith(pattern + ' ') || trimmed.startsWith(pattern + '\t')) return true;
+    // Regex match (patterns starting with / are treated as regex)
+    if (pattern.startsWith('/') && pattern.endsWith('/')) {
+      try {
+        if (new RegExp(pattern.slice(1, -1)).test(trimmed)) return true;
+      } catch { /* invalid regex, skip */ }
+    }
+  }
+  return false;
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 // Filesystem + shell read-only commands (match by first word or first two words)
@@ -52,8 +89,14 @@ const GIT_SAFE_READ = [
 
 // Git non-destructive write subcommands (always auto-approved)
 const GIT_SAFE_WRITE = [
-  "add", "commit", "stash", "worktree add", "worktree list",
+  "add", "commit", "stash push", "stash save", "stash list", "stash show",
+  "worktree add", "worktree list",
   "branch -m",
+];
+
+// Git stash subcommands that destroy stash entries
+const GIT_STASH_DESTRUCTIVE = [
+  "stash drop", "stash pop", "stash clear",
 ];
 
 // Git commands auto-approved ONLY inside a worktree directory
@@ -130,6 +173,14 @@ function classifyGitCommand(cmd, { inWorktree = false } = {}) {
     if (gitCmd.startsWith(d)) return "ask";
   }
 
+  // Stash destructive subcommands (drop, pop, clear)
+  for (const s of GIT_STASH_DESTRUCTIVE) {
+    if (gitCmd.startsWith(s)) return "ask";
+  }
+
+  // Bare "git stash" (no subcommand) is safe — equivalent to stash push
+  if (gitCmd === "stash" || /^stash\s*$/.test(gitCmd)) return "allow";
+
   // Dangerous patterns (--force, --hard, rm, etc.)
   for (const p of DANGEROUS_PATTERNS) {
     if (p.test(cmd)) return "ask";
@@ -166,6 +217,9 @@ function isSedSafe(cmd) {
 function classifySegment(raw, { inWorktree = false } = {}) {
   const cmd = raw.trim();
   if (!cmd || cmd === "true" || cmd === "false") return "allow";
+
+  // Check user-approved commands first (overrides all other classification)
+  if (isUserApproved(cmd)) return "allow";
 
   // Strip leading environment variable assignments: FOO=bar BAZ=qux cmd ...
   const withoutEnv = cmd.replace(/^(\w+=\S+\s+)+/, "");
