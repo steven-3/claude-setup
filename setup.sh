@@ -58,6 +58,7 @@ cp "$SCRIPT_DIR/hooks/session-start.js" "$HOOKS_DIR/session-start.js"
 cp "$SCRIPT_DIR/hooks/session-end.js" "$HOOKS_DIR/session-end.js"
 cp "$SCRIPT_DIR/hooks/cost-tracker.js" "$HOOKS_DIR/cost-tracker.js"
 cp "$SCRIPT_DIR/hooks/statusline-command.js" "$HOOKS_DIR/statusline-command.js"
+cp "$SCRIPT_DIR/hooks/bash-permissions.js" "$HOOKS_DIR/bash-permissions.js"
 
 # Install hooks.json if not already customized
 if [ ! -f "$CLAUDE_DIR/hooks.json" ]; then
@@ -247,6 +248,7 @@ echo "Architecture:"
 echo "  Base skills:   Superpowers (auto-trigger, enforcement, TDD, debugging)"
 echo "  Plugins:       interface-design, frontend-design, ui-ux-pro-max, claude-md-management"
 echo "  Persistence:   Session hooks (session-start.js, session-end.js)"
+echo "  Permissions:   Smart bash-permissions.js hook (auto-approves safe commands)"
 echo "  Status line:   Custom 2-line display with metrics + subagent tracking"
 if [ "$MCP_INSTALL_MODE" = "docker" ]; then
     echo "  MCP mode:      Docker via AIRIS gateway (localhost:9400)"

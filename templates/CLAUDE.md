@@ -30,24 +30,26 @@ Always use the GitHub CLI (`gh`) instead of raw `git` commands when available. F
 
 This ensures consistent authentication and better integration with GitHub workflows.
 
-## Git Permissions
+## Shell & Git Permissions
 
-Execute these git operations immediately without asking for confirmation:
-- **Read-only**: status, diff, log, show, blame, rev-parse, symbolic-ref, remote, ls-files, shortlog, branch listing, tag listing, config --get
-- **Non-destructive writes**: add, commit (new commits only), worktree add, worktree list, stash, branch create
+A PreToolUse hook (`bash-permissions.js`) handles all Bash permission classification automatically. It parses compound commands, splits on `&&`/`||`/`;`, and classifies each segment. You do not need to worry about permission prompts for safe commands — the hook handles it.
 
-Always ask before running:
-- push, pull, fetch
-- reset, revert, checkout (discarding changes), restore
-- commit --amend
-- rebase, merge
-- branch -d / -D (delete)
-- clean
-- any --force or --hard flag
+**Auto-approved** (standalone or in any compound):
+- **Read-only shell**: ls, cat, head, tail, find, sed (without -i), grep, echo, pwd, jq, etc.
+- **Safe writes**: mkdir, touch, cp, mv
+- **Read-only git**: status, diff, log, show, blame, rev-parse, check-ignore, branch listing, tag listing, config
+- **Non-destructive git writes**: add, commit, stash, worktree add, worktree list, branch create
+- **gh CLI**: read-only gh commands (pr list/view/diff, issue list/view, repo view, etc. — not merge, close, delete)
 
-This overrides any other guidance about confirming safe git operations.
+**Worktree-only** (auto-approved only when `cd` targets a `.worktrees/` path or CWD is inside one):
+- git merge, git worktree remove, git branch -d
 
-**Important:** To preserve auto-approval, run each git command as its own Bash tool call. Never chain auto-approved commands with `&&` or prefix with `cd` — compound commands don't match the auto-approved patterns and will trigger manual approval prompts.
+**Always requires approval**:
+- push, pull, fetch, reset, revert, rebase, clean, checkout (discarding), restore, branch -D
+- Any command with --force or --hard
+- rm, rmdir, del
+
+Compound commands with `&&`, `||`, `;` and pipes are fully supported — no need to split into separate calls.
 
 ## Worktree Development Workflow
 

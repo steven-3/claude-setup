@@ -31,6 +31,7 @@ Restart Claude Code after setup completes.
 | `hooks/session-end.js` | `~/.claude/hooks/` | Saves session context on exit |
 | `hooks/cost-tracker.js` | `~/.claude/hooks/` | Appends cost data to `~/.claude/cost-log.jsonl` |
 | `hooks/statusline-command.js` | `~/.claude/hooks/` | Two-line colored status bar with metrics |
+| `hooks/bash-permissions.js` | `~/.claude/hooks/` | PreToolUse hook that auto-approves safe Bash commands |
 | `hooks.json` | `~/.claude/hooks.json` | Hook event definitions (skipped if already exists) |
 | `skills/living-docs/SKILL.md` | `~/.claude/skills/living-docs/` | Auto-syncs ARCHITECTURE.md and DESIGN.md |
 | `skills/living-docs/init/SKILL.md` | `~/.claude/skills/living-docs/init/` | Creates AI-optimized ARCHITECTURE.md and DESIGN.md |
@@ -91,6 +92,22 @@ Two-line terminal display showing:
 - User/host, model, directory, git branch
 - Context window progress bar with color gradient
 - Token usage, thinking level, active subagent count + names, session cost
+
+### Bash Permission Hook
+
+Instead of maintaining dozens of `Bash(...)` allow-list patterns in `settings.json`, a single `PreToolUse` hook (`bash-permissions.js`) classifies every Bash command dynamically:
+
+1. Splits compound commands on `&&`, `||`, `;` (respects quotes)
+2. Classifies each segment against safe-command rules
+3. Returns `permissionDecision: "allow"` or `"ask"`
+
+**Auto-approved commands** include read-only shell (ls, cat, sed without -i, grep, etc.), safe git (status, diff, log, add, commit, stash, worktree add/list), mkdir, gh CLI, and pipes between safe commands.
+
+**Worktree-aware**: `git merge`, `git worktree remove`, and `git branch -d` are only auto-approved when the command includes a `cd` into a `.worktrees/` directory or CWD is already inside one. Outside that context, they require approval.
+
+**Always requires approval**: git push/pull/fetch/reset/revert/rebase, rm, any `--force` or `--hard` flag, and unknown commands.
+
+To customize, edit `~/.claude/hooks/bash-permissions.js` — the classification lists are at the top of the file.
 
 ## API Keys
 

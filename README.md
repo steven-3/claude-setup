@@ -1,61 +1,133 @@
 # Claude Code Setup
 
-Portable Claude Code configuration with skills, session persistence, custom status line, and semantic code navigation.
+Opinionated, portable Claude Code configuration. One script installs skills, hooks, plugins, MCP servers, a custom status line, and smart permission handling — so Claude Code works the way you want out of the box.
 
-## For Claude Code: Auto-Setup Instructions
+## What This Does
 
-If a user has given you this repo URL and asked you to set it up, follow these steps:
+This repo configures Claude Code with a full development workflow:
 
-### 1. Clone and run setup
+| Layer | What | How |
+|-------|------|-----|
+| **Skills** | TDD, debugging, planning, code review, brainstorming | [Superpowers](https://github.com/anthropics/claude-code-plugins) plugin with enforcement |
+| **Session Persistence** | Remembers context between conversations | Hooks save/load summaries (~500 tokens) on stop/start |
+| **Bash Permissions** | Auto-approves safe commands, blocks dangerous ones | PreToolUse hook parses compound commands segment-by-segment |
+| **Status Line** | Model, branch, context %, agents, cost at a glance | Two-line colored terminal display |
+| **MCP Servers** | Code nav, browser testing, web search, UI components | Docker (AIRIS gateway) or direct (individual servers) |
+| **Living Docs** | ARCHITECTURE.md and DESIGN.md stay in sync with code | Custom skill fires on conversation start + after changes |
+| **Project Template** | CLAUDE.md starter for any new project | `/init` skill auto-detects tech stack and fills it in |
+| **UI Plugins** | Design guidance for frontend work | interface-design, frontend-design, ui-ux-pro-max |
+
+## Quick Start
+
+### Let Claude do it
+
+Give Claude this repo URL and it will self-install:
+
+> Clone https://github.com/steven-3/claude-setup.git and run the setup script
+
+It will ask about API keys and Docker vs Direct MCP mode, then handle everything.
+
+### Or do it yourself
 
 ```bash
-git clone https://github.com/steven-3/claude-setup.git /tmp/claude-setup
-cd /tmp/claude-setup
+git clone https://github.com/steven-3/claude-setup.git
+cd claude-setup
+cp .env.example .env    # add API keys (optional)
+bash setup.sh
 ```
 
-If the user has API keys to configure, ask them before running setup:
-- `TAVILY_API_KEY` — for web search (optional)
-- `TWENTYFIRST_API_KEY` — for 21st.dev magic components (optional)
+Restart Claude Code after setup completes.
 
-If they provide keys, create the `.env` file:
-```bash
-cat > /tmp/claude-setup/.env << 'EOF'
-TAVILY_API_KEY=<their_key>
-TWENTYFIRST_API_KEY=<their_key>
-EOF
+## What Gets Installed
+
+### Hooks (to `~/.claude/hooks/`)
+
+| Hook | Event | Purpose |
+|------|-------|---------|
+| `session-start.js` | SessionStart | Loads previous session summary into context |
+| `session-end.js` | Stop | Saves branch, files, decisions, next steps |
+| `cost-tracker.js` | Stop | Appends session cost to `~/.claude/cost-log.jsonl` |
+| `statusline-command.js` | Status line | Two-line display with model, branch, context bar, agents, cost |
+| `bash-permissions.js` | PreToolUse (Bash) | Classifies commands as safe/dangerous — see below |
+
+### Plugins
+
+| Plugin | Purpose |
+|--------|---------|
+| `superpowers` | TDD, debugging, planning, code review with enforcement |
+| `claude-md-management` | CLAUDE.md auditing and maintenance |
+| `interface-design` | UI mockup generation |
+| `frontend-design` | Responsive web design patterns |
+| `ui-ux-pro-max` | Advanced UX patterns and design systems |
+
+### MCP Servers
+
+You choose Docker or Direct mode during setup:
+
+- **Docker (recommended)**: Single AIRIS gateway on `localhost:9400` routing to Serena, Context7, Playwright, Tavily, chrome-devtools, shadcn
+- **Direct**: Each server registered individually via npx/uvx (no Docker needed)
+
+Plus Pencil (auto-detected) and Magic MCP (if API key provided).
+
+## How Bash Permissions Work
+
+Claude Code's default permission system uses pattern-matching allow-lists in `settings.json`. This breaks on compound commands (`cd foo && git add . && git commit -m "msg"`) because patterns can't match arbitrary combinations.
+
+This setup replaces that with a **PreToolUse hook** that classifies commands dynamically:
+
+```
+Command received → split on && || ; → classify each segment → allow or ask
 ```
 
-Then run the setup script. It will prompt the user to choose between Docker and Direct MCP installation:
-```bash
-bash /tmp/claude-setup/setup.sh
-```
+**Auto-approved**: read-only shell (ls, cat, grep, sed without -i, jq), safe git (status, diff, log, add, commit, stash), mkdir, read-only gh commands (pr list/view, issue list/view — not merge/close/delete), and any compound combining these.
 
-### 2. Create CLAUDE.md in the current project
+**Worktree-aware**: `git merge`, `git worktree remove`, and `git branch -d` auto-approve **only** when a `cd` in the command targets a `.worktrees/` directory (or CWD is already in one). This prevents accidental merges in the main repo while allowing the worktree development workflow to run uninterrupted.
 
-After setup completes, go back to the user's project directory and run the `/init` skill to create a project-specific `CLAUDE.md`. This will:
-- Copy the template to the project root
-- Auto-detect the tech stack, commands, and project structure
-- Fill in what it can and leave placeholders for the rest
+**Always asks**: git push/pull/fetch/reset/revert/rebase, rm, `--force`, `--hard`, and unknown commands.
 
-### 3. Tell the user to restart Claude Code
+To customize the rules, edit the classification lists at the top of `hooks/bash-permissions.js`.
 
-The new settings, hooks, plugins, and status line take effect after restarting.
+## Quirks and Things to Know
 
----
+### Superpowers enforcement
 
-## What's Included
+The Superpowers plugin enforces skill usage — it will make Claude check for applicable skills before responding to most requests. This is intentional but can feel heavy for simple tasks. Prefix requests with `quick:` to skip skill gates.
 
-| Component | Purpose |
-|-----------|---------|
-| **Superpowers** | TDD, debugging, planning, code review with enforcement |
-| **5 Plugins** | superpowers, claude-md-management, interface-design, frontend-design, ui-ux-pro-max |
-| **Session Hooks** | Auto-save/load session context between conversations |
-| **Status Line** | 2-line colored display: model, branch, context usage, active agents, cost |
-| **MCP Servers** | Serena, Context7, Playwright, Tavily, chrome-devtools, shadcn (Docker or Direct) |
-| **Living Docs** | Auto-syncs ARCHITECTURE.md and DESIGN.md with code changes |
-| **CLAUDE.md Template** | Starter instructions for any new project |
-| **/init skill** | Run `/init` in any project to scaffold CLAUDE.md with auto-detection |
+### Session persistence is lossy
 
-## Manual Setup
+Sessions save a ~500 token summary, not a full transcript. Claude gets the gist of what happened last time (branch, modified files, key decisions, next steps) but not every detail. This is a deliberate tradeoff for context window efficiency.
 
-See [SETUP.md](SETUP.md) for detailed manual installation instructions, API key configuration, per-project Serena setup, and troubleshooting.
+### Status line requires Node.js
+
+The status line hook runs `node ~/.claude/hooks/statusline-command.js` on every render cycle. If Node isn't in your PATH, you'll see a blank status bar. No errors, just silence.
+
+### Worktree directory convention
+
+The setup expects worktrees in `.worktrees/` (with the dot). The bash permissions hook checks for this specific pattern. If you use a different directory name, update the regex in `bash-permissions.js`.
+
+### Docker mode requires HOST_WORKSPACE_DIR
+
+If using Docker/AIRIS mode, Serena can only see projects under the mounted `HOST_WORKSPACE_DIR` (defaults to `~/github`). Change it in `~/.claude/airis-mcp-gateway/.env` if your projects live elsewhere.
+
+### Plugin installation can fail silently
+
+`claude plugin install` sometimes says "already installed" when it actually failed. Verify with `claude plugin list` after setup.
+
+### The /init skill needs a restart first
+
+The `/init` skill (for creating CLAUDE.md in new projects) is installed to `~/.claude/skills/` but won't be available until you restart Claude Code after running setup.
+
+### Settings are overwritten, not merged
+
+`setup.sh` backs up your existing `settings.json` to `.bak` then replaces it. If you've added custom settings, merge them back manually from the backup.
+
+## New Project Setup
+
+After installing, in any project directory:
+
+1. Run `/init` — auto-detects tech stack, creates CLAUDE.md, generates ARCHITECTURE.md
+2. Or manually: `cp ~/.claude/templates/CLAUDE.md ./CLAUDE.md` and fill in the blanks
+
+## Detailed Setup Guide
+
+See [SETUP.md](SETUP.md) for manual installation, per-project Serena configuration, API keys, verification steps, and troubleshooting.
