@@ -45,7 +45,7 @@ if ! claude plugin install "ui-ux-pro-max@ui-ux-pro-max-skill" 2>/dev/null; then
 fi
 echo "  Done."
 
-# ── 3. Remove SuperClaude (if present) ──────────────────────
+# ── 3. Clean up deprecated components ─────────────────────
 echo "[3/7] Cleaning up deprecated components..."
 if [ -d "$CLAUDE_DIR/commands/sc" ]; then
     rm -rf "$CLAUDE_DIR/commands/sc"
@@ -54,6 +54,11 @@ fi
 if [ -d "$HOME/.superclaude" ] && [ ! -d "$HOME/.superclaude/airis-mcp-gateway" ]; then
     echo "  WARNING: ~/.superclaude exists but may contain non-AIRIS data."
     echo "  Review and remove manually if no longer needed."
+fi
+# Remove old /init skill (renamed to /sm:init)
+if [ -d "$CLAUDE_DIR/skills/init" ]; then
+    rm -rf "$CLAUDE_DIR/skills/init"
+    echo "  Removed old /init skill (now /sm:init)"
 fi
 echo "  Done."
 

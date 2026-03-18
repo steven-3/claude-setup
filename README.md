@@ -134,6 +134,19 @@ After installing, in any project directory:
 1. Run `/sm:init` — auto-detects tech stack, creates CLAUDE.md, generates ARCHITECTURE.md
 2. Or manually: `cp ~/.claude/templates/CLAUDE.md ./CLAUDE.md` and fill in the blanks
 
+## Updating
+
+```bash
+cd claude-setup
+git pull
+bash update.sh    # hooks, skills, templates only (fast, no prompts)
+bash setup.sh     # full reinstall (settings, plugins, MCP servers)
+```
+
+`update.sh` refreshes hooks, skills, and templates without touching settings.json, plugins, or MCP servers. Use it when pulling new changes that only affect skills or hooks.
+
+`setup.sh` does everything from scratch (backs up settings.json first).
+
 ## Detailed Setup Guide
 
 See [SETUP.md](SETUP.md) for manual installation, per-project Serena configuration, API keys, verification steps, and troubleshooting.

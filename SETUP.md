@@ -265,7 +265,15 @@ If Serena is working, Claude will use `find_symbol`, `find_referencing_symbols`,
 
 ## Updating
 
-Pull the latest and re-run setup:
+**Quick update** (hooks, skills, templates only — no prompts, no settings changes):
+
+```bash
+cd claude-setup
+git pull
+bash update.sh
+```
+
+**Full reinstall** (settings, plugins, MCP servers — backs up settings.json first):
 
 ```bash
 cd claude-setup
@@ -273,4 +281,4 @@ git pull
 bash setup.sh
 ```
 
-Your existing `settings.json` is backed up to `settings.json.bak` before overwriting.
+Use `update.sh` when pulling changes that only affect skills or hooks. Use `setup.sh` for a fresh install or when settings/plugins/MCP config has changed.
