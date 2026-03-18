@@ -7,7 +7,7 @@ This setup uses **Superpowers** as the base skill system with ECC-inspired sessi
 - Superpowers skills are installed and auto-trigger per the using-superpowers meta-skill
 - When I prefix a request with "quick:", skip brainstorming and skill gates
 - Superpowers enforcement takes priority over all other methodology guidance
-- **living-docs** skill keeps architecture.md and DESIGN.md in sync with code changes (fires on conversation start + after changes)
+- **living-docs** skill keeps ARCHITECTURE.md and DESIGN.md in sync with code changes (fires on conversation start + after changes)
 
 ## Git Commands
 
@@ -97,8 +97,10 @@ Use these naturally when relevant — don't wait to be asked.
 - When making any UI/frontend changes, invoke the `/ui-ux-pro-max` skill for design guidance and quality checks.
 
 ## Living Documentation
-- Run `/living-docs` at the **start** of every conversation to load `ARCHITECTURE.md` and `DESIGN.md` as working context.
-- After making code or design changes, update the relevant doc (`ARCHITECTURE.md` for structural changes, `DESIGN.md` for UI/styling changes) before ending the conversation.
+- At conversation start, check for `ARCHITECTURE.md` (always) and `DESIGN.md` (only if it exists).
+- If `ARCHITECTURE.md` is missing, prompt the user to run `/living-docs:init` before starting any coding work.
+- If `DESIGN.md` exists, treat this as a UI project and maintain it alongside `ARCHITECTURE.md`.
+- After code changes, update `ARCHITECTURE.md`. After design/UI changes, update `DESIGN.md` (if it exists).
 
 ## Hooks
 Session persistence hooks fire automatically:

@@ -99,8 +99,10 @@ Use these naturally when relevant — don't wait to be asked.
 - When making any UI/frontend changes, invoke the `/ui-ux-pro-max` skill for design guidance.
 
 ## Living Documentation
-- Run `/living-docs` at the **start** of every conversation to load `ARCHITECTURE.md` and `DESIGN.md`.
-- After making code or design changes, update the relevant doc before ending the conversation.
+- At conversation start, check for `ARCHITECTURE.md` (always) and `DESIGN.md` (only if it exists).
+- If `ARCHITECTURE.md` is missing, prompt the user to run `/living-docs:init` before starting any coding work.
+- If `DESIGN.md` exists, treat this as a UI project and maintain it alongside `ARCHITECTURE.md`.
+- After code changes, update `ARCHITECTURE.md`. After design/UI changes, update `DESIGN.md` (if it exists).
 ```
 
 3. Scan the project for common files to auto-detect context:
@@ -117,3 +119,5 @@ Use these naturally when relevant — don't wait to be asked.
    - **Project Structure**: Generate from actual directory layout (top 2 levels, skip node_modules/dist/.git)
 
 5. Tell the user what was created and which sections they should review or fill in manually.
+
+6. Run `/living-docs:init` to generate `ARCHITECTURE.md` and optionally `DESIGN.md` for the project. This creates the AI-optimized living documentation files that the `/living-docs` skill will maintain going forward.
