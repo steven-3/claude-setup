@@ -1,15 +1,23 @@
-# Claude Code - Optimal Setup
+# Supermind
 
-## System Architecture
-This setup uses **Superpowers** as the base skill system with ECC-inspired session persistence hooks.
+## Project Overview
+Supermind is an npm package (`supermind-claude`) providing complete Claude Code setup — hooks, skills, status line, MCP servers, and living documentation.
+
+**File organization:**
+- `cli/` — Installer commands (install, update, doctor, uninstall)
+- `hooks/` — Runtime hooks copied to `~/.claude/hooks/` (session persistence, bash permissions, status line, cost tracking)
+- `skills/` — SKILL.md files copied to `~/.claude/skills/` (supermind-init, supermind-living-docs)
+- `templates/` — CLAUDE.md project template copied to `~/.claude/templates/`
+- `lib/` — Shared utilities (paths, settings builder, file operations)
 
 ## Skill System
 - Superpowers skills are installed and auto-trigger per the using-superpowers meta-skill
 - When I prefix a request with "quick:", skip brainstorming and skill gates
 - Superpowers enforcement takes priority over all other methodology guidance **except** Git Permissions, Shell Permissions, and Worktree Workflow rules in this file — those are enforced by a PreToolUse hook and must not be second-guessed or re-prompted by skills
-- **`/supermind:living-docs`** keeps ARCHITECTURE.md and DESIGN.md in sync with code changes (fires on conversation start + after changes)
+- **`/supermind-init`** onboards a project: creates CLAUDE.md, generates ARCHITECTURE.md and DESIGN.md, runs health checks
+- **`/supermind-living-docs`** keeps ARCHITECTURE.md and DESIGN.md in sync with code changes (manual trigger)
 
-## Git Permissions
+## Shell & Git Permissions
 
 A PreToolUse hook (`bash-permissions.js`) handles all Bash permission classification automatically. It parses compound commands, splits on `&&`/`||`/`;`, and classifies each segment. You do not need to worry about permission prompts for safe commands — the hook handles it.
 
@@ -66,11 +74,20 @@ Use the superpowers `/using-git-worktrees` skill for worktree creation. It handl
 - Never skip the review step. Never skip "minor" fixes. Every finding gets fixed.
 - This entire process — create, implement, review, fix, merge, clean up — executes without stopping to ask for permission.
 
-## Memory Protocol
-- Project-specific rules belong in this file (CLAUDE.md)
-- Use Serena `write_memory` for architectural decisions and conventions discovered during work
-- Cross-project patterns: manually extract to `~/.serena/memories/global/` or Obsidian vault
-- Session continuity is handled by hooks (session-start.js / session-end.js)
+## Development Workflow
+All non-trivial changes go through the worktree workflow above. Claude handles version bumps in `package.json` and updates to `CHANGELOG.md` as part of the commit.
+
+## Release Checklist
+1. Bump version in `package.json`
+2. Update `CHANGELOG.md`
+3. Test with `node cli/index.js --version` and `node cli/index.js doctor`
+4. Commit
+5. `npm publish` (requires user approval)
+
+## Versioning
+- **Patch** (0.0.x): Bug fixes, typo corrections, minor hook/skill tweaks
+- **Minor** (0.x.0): New features, new hooks/skills, new CLI commands
+- **Major** (x.0.0): Breaking changes to CLI interface, hook API, or installed file layout
 
 ## MCP Servers
 Use these naturally when relevant — don't wait to be asked.
@@ -86,12 +103,19 @@ Use these naturally when relevant — don't wait to be asked.
 - When making any UI/frontend changes, invoke the `/ui-ux-pro-max` skill for design guidance and quality checks.
 
 ## Living Documentation
-- At conversation start, check for `ARCHITECTURE.md` (always) and `DESIGN.md` (only if it exists).
-- If `ARCHITECTURE.md` is missing, prompt the user to run `/supermind:init` before starting any coding work.
-- If `DESIGN.md` exists, treat this as a UI project and maintain it alongside `ARCHITECTURE.md`.
-- After code changes, update `ARCHITECTURE.md`. After design/UI changes, update `DESIGN.md` (if it exists).
+- The session-start hook automatically reads `ARCHITECTURE.md` and `DESIGN.md` (if it exists) at the beginning of every conversation.
+- After code changes, update `ARCHITECTURE.md` if files, APIs, dependencies, or environment variables changed.
+- After design/UI changes, update `DESIGN.md` if colors, fonts, spacing, or components changed.
+- Run `/supermind-living-docs` to manually sync documentation with recent changes.
+- If `ARCHITECTURE.md` is missing, run `/supermind-init` to create one.
 
 ## Hooks
 Session persistence hooks fire automatically:
-- `SessionStart`: Loads previous session summary (~500-700 tokens)
+- `SessionStart`: Loads previous session summary (~500-700 tokens), reads ARCHITECTURE.md and DESIGN.md
 - `Stop`: Saves session context for next session + cost tracking
+
+## Memory Protocol
+- Project-specific rules belong in this file (CLAUDE.md)
+- Use Serena `write_memory` for architectural decisions and conventions discovered during work
+- Cross-project patterns: manually extract to `~/.serena/memories/global/` or Obsidian vault
+- Session continuity is handled by hooks (session-start.js / session-end.js)

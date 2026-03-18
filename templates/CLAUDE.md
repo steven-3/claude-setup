@@ -6,16 +6,16 @@
 - **Design system**: See `DESIGN.md`
 
 ## Commands
-<!-- Fill in the project's common commands -->
+<!-- Fill in or run /supermind-init to auto-detect -->
 ```bash
 # npm run dev / start / build / test etc.
 ```
 
 ## Tech Stack
-<!-- List the project's core technologies -->
+<!-- Fill in or run /supermind-init to auto-detect -->
 
 ## Project Structure
-<!-- Document the directory layout -->
+<!-- Fill in or run /supermind-init to auto-detect -->
 
 ## Shell & Git Permissions
 
@@ -90,7 +90,8 @@ Use these naturally when relevant — don't wait to be asked.
 - When making any UI/frontend changes, invoke the `/ui-ux-pro-max` skill for design guidance and quality checks.
 
 ## Living Documentation
-- At conversation start, check for `ARCHITECTURE.md` (always) and `DESIGN.md` (only if it exists).
-- If `ARCHITECTURE.md` is missing, prompt the user to run `/supermind:init` before starting any coding work.
-- If `DESIGN.md` exists, treat this as a UI project and maintain it alongside `ARCHITECTURE.md`.
-- After code changes, update `ARCHITECTURE.md`. After design/UI changes, update `DESIGN.md` (if it exists).
+- The session-start hook automatically reads `ARCHITECTURE.md` and `DESIGN.md` (if it exists) at the beginning of every conversation.
+- After code changes, update `ARCHITECTURE.md` if files, APIs, dependencies, or environment variables changed.
+- After design/UI changes, update `DESIGN.md` if colors, fonts, spacing, or components changed.
+- Run `/supermind-living-docs` to manually sync documentation with recent changes.
+- If `ARCHITECTURE.md` is missing, run `/supermind-init` to create one.
