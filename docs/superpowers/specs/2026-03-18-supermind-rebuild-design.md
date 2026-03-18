@@ -11,8 +11,8 @@
 Supermind is a complete, opinionated Claude Code setup system distributed as an npm package. It provides:
 
 - **Global setup** via `npx supermind` — installs hooks, skills, settings, plugins, MCP servers, status line, templates
-- **Project-level onboarding** via `/supermind:init` — CLAUDE.md management, living documentation generation, health checks, optional skill/MCP discovery
-- **Ongoing documentation** via hooks (auto-read on session start) and `/supermind:living-docs` (manual sync)
+- **Project-level onboarding** via `/supermind-init` — CLAUDE.md management, living documentation generation, health checks, optional skill/MCP discovery
+- **Ongoing documentation** via hooks (auto-read on session start) and `/supermind-living-docs` (manual sync)
 
 **Target audience:** Developers who want a clean, opinionated Claude Code environment. Not building a community, but clean install UX so others can use it easily.
 
@@ -23,8 +23,8 @@ Supermind is a complete, opinionated Claude Code setup system distributed as an 
 ## 2. Repository & Package Identity
 
 - **Repo:** Rename `claude-setup` → `supermind`
-- **npm package:** `supermind` (fallback: `supermind-claude` or `@supermind/cli` if taken)
-- **Install:** `npx supermind` (primary), or give Claude Code the repo URL and it figures it out
+- **npm package:** `supermind-claude` (the name `supermind` is taken on npm)
+- **Install:** `npx supermind-claude` (primary), or give Claude Code the repo URL and it figures it out
 - **Version:** semver in `package.json` (single source of truth)
 - **License:** MIT
 
@@ -34,10 +34,10 @@ Supermind is a complete, opinionated Claude Code setup system distributed as an 
 
 | Command | Purpose |
 |---|---|
-| `npx supermind` / `npx supermind install` | Full global setup |
-| `npx supermind update` | Lightweight refresh (hooks, skills, templates only) |
-| `npx supermind doctor` | Health check — verify everything works |
-| `npx supermind uninstall` | Clean removal of all installed components |
+| `npx supermind-claude` / `npx supermind-claude install` | Full global setup |
+| `npx supermind-claude update` | Lightweight refresh (hooks, skills, templates only) |
+| `npx supermind-claude doctor` | Health check — verify everything works |
+| `npx supermind-claude uninstall` | Clean removal of all installed components |
 
 ---
 
@@ -97,7 +97,8 @@ supermind/
 
 - Parse args: `install` (default), `update`, `doctor`, `uninstall`
 - Route to command handler
-- Handle `--help`, `--version`
+- Handle `--help`, `--version`, `--non-interactive` (skip all prompts, use defaults), `--mcp docker|direct|skip`
+- Shebang: `#!/usr/bin/env node` at top
 - No external dependencies — use only Node.js built-ins (fs, path, os, child_process, readline)
 
 ### 5.2 Platform Detection (`cli/lib/platform.js`)
@@ -119,9 +120,15 @@ Exports: `getClaudeHome()`, `getHooksDir()`, `getSkillsDir()`, `getTemplatesDir(
 
 Non-destructive merge strategy:
 1. Read existing `settings.json` (if any)
-2. Deep merge Supermind defaults into it
-3. Never overwrite user customizations
-4. Backup existing settings before first write (`settings.json.backup`)
+2. Backup existing settings before first write (`settings.json.backup`)
+3. Merge Supermind defaults using key-type-aware strategy:
+   - **Scalars** (strings, booleans, numbers): set only if key is absent (never overwrite user values)
+   - **Objects** (enabledPlugins, extraKnownMarketplaces, permissions): recursive merge, add missing keys, preserve existing
+   - **Arrays** (hooks arrays, permissions.allow): union/deduplicate by matching on command string or hook command path
+   - **Supermind-owned keys**: `statusLine`, hook entries pointing to `~/.claude/hooks/supermind-*` or known Supermind hook filenames — these are always overwritten on install/update
+4. Write merged settings
+
+**Identifying Supermind-owned entries:** Hook entries are identified by their command path containing Supermind hook filenames (bash-permissions.js, session-start.js, session-end.js, cost-tracker.js, statusline-command.js). Plugin entries are identified by known plugin IDs. This allows uninstall to remove only Supermind entries.
 
 Handles: `permissions`, `enabledPlugins`, `extraKnownMarketplaces`, `statusLine`, `hooks`, `alwaysThinkingEnabled`, `effortLevel`
 
@@ -139,16 +146,18 @@ Handles: `permissions`, `enabledPlugins`, `extraKnownMarketplaces`, `statusLine`
 
 ### 5.6 Plugin Enablement (`cli/lib/plugins.js`)
 
-Enables these plugins in settings.json:
+Enables plugins by writing to `settings.json.enabledPlugins` (does not invoke `claude plugin install` subprocess — avoids runtime dependency on `claude` being in PATH). Plugins activate when Claude Code next starts or restarts.
+
+Plugins:
 - `superpowers@claude-plugins-official`
 - `claude-md-management@claude-plugins-official`
 - `frontend-design@claude-plugins-official`
-- `ui-ux-pro-max@ui-ux-pro-max-skill` (with marketplace config)
+- `ui-ux-pro-max@ui-ux-pro-max-skill` (with marketplace config in `extraKnownMarketplaces`)
 
 ### 5.7 MCP Server Setup (`cli/lib/mcp.js`)
 
-Interactive choice via readline:
-- **Docker mode:** Copy docker-compose.yml and mcp-config.json to `~/.claude/airis/`, start containers if Docker available
+Interactive choice via readline (skipped with `--non-interactive` or `--mcp docker|direct|skip`):
+- **Docker mode:** Copy docker-compose.yml and mcp-config.json to `~/.claude/airis/`, start containers if Docker available. Uses `docker compose` (v2, not deprecated `docker-compose` v1).
 - **Direct mode:** Configure individual MCP servers via npx/uvx in settings
 - **Skip:** Don't configure MCP servers
 
@@ -183,7 +192,14 @@ Prints summary at end with next steps.
 
 ### 5.11 Update Command (`cli/commands/update.js`)
 
-Subset: hooks, skills, templates only. Prints what was updated.
+1. Read installed version from `~/.claude/.supermind-version` (written by install/update)
+2. Compare to package.json version
+3. Log: "Updating from X.Y.Z to A.B.C" or "Already at X.Y.Z, refreshing files"
+4. Overwrite: hooks, skills, templates
+5. Write new version to `~/.claude/.supermind-version`
+6. Print what was updated
+
+Always idempotent — safe to run repeatedly.
 
 ### 5.12 Doctor Command (`cli/commands/doctor.js`)
 
@@ -191,9 +207,9 @@ Checks (pass/fail/warn for each):
 - Node.js version ≥ 18
 - `~/.claude/` directory exists
 - `settings.json` exists and is valid JSON
-- All 5 hooks present in `~/.claude/hooks/`
+- All expected hooks present in `~/.claude/hooks/` (derived from package's `hooks/` directory at runtime, not hardcoded count)
 - Hooks registered in settings.json
-- All 3 skill directories present in `~/.claude/skills/`
+- All expected skill directories present in `~/.claude/skills/` (derived from package's `skills/` directory at runtime)
 - Plugins enabled in settings
 - CLAUDE.md template present
 - Session directory writable
@@ -202,12 +218,14 @@ Checks (pass/fail/warn for each):
 
 ### 5.13 Uninstall Command (`cli/commands/uninstall.js`)
 
-- Remove hooks from `~/.claude/hooks/` (only Supermind-owned files)
-- Remove skills from `~/.claude/skills/` (only Supermind-owned directories)
-- Remove template
-- Remove Supermind entries from settings.json (preserve non-Supermind settings)
-- Optionally remove AIRIS config
-- Confirm before executing
+- Remove hooks from `~/.claude/hooks/` (identified by known Supermind filenames: bash-permissions.js, session-start.js, session-end.js, cost-tracker.js, statusline-command.js)
+- Remove skills from `~/.claude/skills/` (known directories: supermind/, supermind-init/, supermind-living-docs/)
+- Remove template (`~/.claude/templates/CLAUDE.md`)
+- Remove Supermind entries from settings.json (identified by known hook command paths and plugin IDs — see Section 5.3)
+- Remove `~/.claude/.supermind-version`
+- Remove legacy `~/.claude/hooks.json` if present
+- Optionally remove AIRIS config (`~/.claude/airis/`)
+- Confirm before executing (skip with `--yes`)
 
 ---
 
@@ -226,22 +244,36 @@ Same logic as current, cleaned up:
 
 Merged responsibility — session context + living docs:
 1. Load most recent session file from `~/.claude/sessions/` (max 7 days old)
-2. Check for `ARCHITECTURE.md` in project root — if exists, read and include compressed summary
-3. Check for `DESIGN.md` in project root — if exists, read and include compressed summary
-4. If ARCHITECTURE.md missing, include note: "Run `/supermind:init` to set up project documentation"
-5. Output combined context (~500-700 tokens total)
+2. Resolve project root via `process.env.PROJECT_DIR` (set by Claude Code's hook runner) with fallback to `process.cwd()`
+3. Check for `ARCHITECTURE.md` in project root — if exists, read and extract:
+   - The Overview section (first paragraph)
+   - The Tech Stack table
+   - Section headings only for remaining sections (as a table of contents)
+   - Truncate to ~200 tokens max for ARCHITECTURE.md portion
+4. Check for `DESIGN.md` in project root — if exists, read and extract:
+   - The Overview section
+   - Section headings only
+   - Truncate to ~100 tokens max for DESIGN.md portion
+5. If ARCHITECTURE.md missing, include note: "Run `/supermind-init` to set up project documentation"
+6. Output combined context (~500-700 tokens total: ~300 session + ~200 architecture + ~100 design + ~100 framing)
+
+**Note:** The extraction is structural (section headings, first paragraphs, tables) not LLM-based compression. This is implementable in pure Node.js with simple markdown parsing.
 
 ### 6.3 session-end.js (Stop)
 
 Save session summary:
 - Timestamp, project dir, git branch, modified files
-- Session summary from environment
+- Session summary from `process.env.SESSION_SUMMARY` (note: this env var may not be set by Claude Code — if absent, saves "Session ended (no summary provided)" which is acceptable; the session file still captures branch and modified files for continuity)
 - Write to `~/.claude/sessions/session-{timestamp}.json`
 - Clean up old sessions (keep max 20)
 
 ### 6.4 cost-tracker.js (Stop)
 
-Append cost entry to `~/.claude/cost-log.jsonl`. Silent fail on error.
+Append cost entry to `~/.claude/cost-log.jsonl`:
+- Reads `SESSION_ID`, `PROJECT_DIR` from environment
+- Reads `CLAUDE_SESSION_COST_USD` if available (for actual cost data)
+- Falls back to timestamp + project dir if cost env var not set
+- Silent fail on error (non-critical hook)
 
 ### 6.5 statusline-command.js (StatusLine)
 
@@ -264,14 +296,16 @@ description: "Supermind — project initialization, living documentation, and co
 ---
 ```
 
-Lists children: `/supermind:init`, `/supermind:living-docs`
+Lists children: `/supermind-init`, `/supermind-living-docs`
 
-### 7.2 `/supermind:init` (Project Onboarding)
+**Naming convention:** Skill directories and `name` fields use hyphens (`supermind-init`). Invocation is `/supermind-init`. The colon notation (`/supermind-init`) is NOT used — hyphens throughout for consistency with the SKILL.md `name` field.
+
+### 7.2 `/supermind-init` (Project Onboarding)
 
 ```yaml
 ---
 name: supermind-init
-description: "Initialize a project with Supermind. Use when starting work in a new project, when ARCHITECTURE.md is missing, or when the user wants to set up CLAUDE.md, living documentation, and project health checks. Triggers on: new project setup, missing docs, /supermind:init"
+description: "Initialize a project with Supermind. Use when starting work in a new project, when ARCHITECTURE.md is missing, or when the user wants to set up CLAUDE.md, living documentation, and project health checks. Triggers on: new project setup, missing docs, /supermind-init"
 ---
 ```
 
@@ -303,7 +337,7 @@ description: "Initialize a project with Supermind. Use when starting work in a n
   - Suggest MCP servers that would help (e.g., database MCP for DB-heavy projects)
   - Present findings to user as suggestions, not auto-install
 
-### 7.3 `/supermind:living-docs` (Manual Sync)
+### 7.3 `/supermind-living-docs` (Manual Sync)
 
 ```yaml
 ---
@@ -327,7 +361,7 @@ When invoked:
 
 Simplified starter template with:
 - Quick Reference section (links to ARCHITECTURE.md, DESIGN.md)
-- Commands (placeholder — `/supermind:init` fills this)
+- Commands (placeholder — `/supermind-init` fills this)
 - Tech Stack (placeholder)
 - Project Structure (placeholder)
 - Shell & Git Permissions (complete — references bash-permissions.js hook)
@@ -389,13 +423,19 @@ The repo's own CLAUDE.md includes:
 
 ## 10. Migration Plan
 
-### Delete
+### Delete from repo
 - `setup.sh`, `update.sh` — replaced by CLI
 - `hooks.json` — replaced by settings.json management in CLI
 - `VERSION` — replaced by package.json version
 - `RESEARCH-PROMPT.md`, `OPTIMAL-SETUP-REPORT.md` — one-time research artifacts
 - `research/` directory — one-time research
 - Old `skills/supermind/` with nested init/living-docs — replaced by flat skill directories
+- `settings.json` — no longer shipped as a static file; settings are constructed programmatically by `cli/lib/settings.js`
+- `SETUP.md` — replaced by README.md with install instructions
+
+### Clean up on user's machine (during install)
+- Remove `~/.claude/hooks.json` if present (legacy file, prevents duplicate hook firing)
+- Remove old skill paths: `~/.claude/skills/supermind/init/`, `~/.claude/skills/supermind/living-docs/`, `~/.claude/skills/sm/`
 
 ### Rewrite from Scratch
 - All hooks (cleaner, consistent patterns, under 150 lines each)
@@ -404,11 +444,10 @@ The repo's own CLAUDE.md includes:
 - `README.md` (Supermind branding, npm install instructions)
 - Templates
 
-### Keep (possibly clean up)
+### Keep (clean up)
 - `airis/` config (docker-compose.yml, mcp-config.json)
 - `.env.example`
 - `.gitignore` (update entries)
-- `settings.json` (reference config, cleaned up)
 
 ### New
 - `package.json` (npm package definition)
@@ -433,11 +472,11 @@ The repo's own CLAUDE.md includes:
 
 ```json
 {
-  "name": "supermind",
+  "name": "supermind-claude",
   "version": "2.0.0",
   "description": "Complete, opinionated Claude Code setup — hooks, skills, status line, MCP servers, and living documentation",
   "bin": {
-    "supermind": "./cli/index.js"
+    "supermind-claude": "./cli/index.js"
   },
   "files": [
     "cli/",
@@ -459,3 +498,19 @@ The repo's own CLAUDE.md includes:
 ```
 
 Zero runtime dependencies. Node.js built-ins only.
+
+---
+
+## 13. README.md Structure
+
+- **What is Supermind** — one-paragraph description
+- **Quick Install** — `npx supermind-claude` + what it does
+- **What Gets Installed** — table of hooks, skills, plugins, settings
+- **Project Setup** — how to use `/supermind-init` in a new project
+- **Living Documentation** — how auto-read and manual sync work
+- **Status Line** — screenshot/description of the two-line display
+- **MCP Servers** — Docker vs Direct mode, what's included
+- **Updating** — `npx supermind-claude update`
+- **Uninstalling** — `npx supermind-claude uninstall`
+- **Platforms** — Windows, macOS, Linux support notes
+- **Troubleshooting** — common issues and `npx supermind-claude doctor`
