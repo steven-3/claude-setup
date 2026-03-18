@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.0.2] - 2026-03-18
+
+### Changed
+- README now recommends `npm install -g supermind-claude` as primary install method
+
 ## [2.0.1] - 2026-03-18
 
 ### Fixed
