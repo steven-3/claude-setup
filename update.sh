@@ -11,7 +11,7 @@ HOOKS_DIR="$CLAUDE_DIR/hooks"
 SKILLS_DIR="$CLAUDE_DIR/skills"
 VERSION=$(cat "$SCRIPT_DIR/VERSION")
 
-echo "=== Claude Code Update v${VERSION} (hooks + skills + templates) ==="
+echo "=== Supermind Update v${VERSION} (hooks + skills + templates) ==="
 echo ""
 
 # ── Hooks ──────────────────────────────────────────────────
@@ -62,5 +62,5 @@ echo "  Done."
 echo "$VERSION" > "$CLAUDE_DIR/.claude-setup-version"
 
 echo ""
-echo "=== Update complete (v${VERSION}) ==="
+echo "=== Supermind Update complete (v${VERSION}) ==="
 echo "Restart Claude Code (or open /hooks) to pick up changes."

@@ -12,7 +12,7 @@ HOOKS_DIR="$CLAUDE_DIR/hooks"
 AIRIS_DIR="$HOME/.claude/airis-mcp-gateway"
 VERSION=$(cat "$SCRIPT_DIR/VERSION")
 
-echo "=== Claude Code Optimal Setup v${VERSION} ==="
+echo "=== Supermind Setup v${VERSION} ==="
 echo ""
 
 # ── 1. Settings ──────────────────────────────────────────────
@@ -330,7 +330,7 @@ echo ""
 # Write installed version
 echo "$VERSION" > "$CLAUDE_DIR/.claude-setup-version"
 
-echo "=== Setup complete (v${VERSION})! ==="
+echo "=== Supermind Setup complete (v${VERSION})! ==="
 echo ""
 echo "Architecture:"
 echo "  Base skills:   Superpowers (auto-trigger, enforcement, TDD, debugging)"
