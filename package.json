@@ -18,7 +18,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/steven-3/supermind"
+    "url": "git+https://github.com/steven-3/supermind.git"
   },
   "engines": {
     "node": ">=18"
