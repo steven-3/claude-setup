@@ -33,6 +33,7 @@ if [ -d "$SKILLS_DIR/init" ]; then
 fi
 
 mkdir -p "$SKILLS_DIR/sm/init"
+cp "$SCRIPT_DIR/skills/sm/SKILL.md" "$SKILLS_DIR/sm/SKILL.md"
 cp "$SCRIPT_DIR/skills/sm/init/SKILL.md" "$SKILLS_DIR/sm/init/SKILL.md"
 echo "  Updated sm:init"
 

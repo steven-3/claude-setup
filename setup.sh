@@ -93,6 +93,7 @@ cp "$SCRIPT_DIR/skills/living-docs/init/architecture-template.md" "$SKILLS_DIR/l
 cp "$SCRIPT_DIR/skills/living-docs/init/design-template.md" "$SKILLS_DIR/living-docs/init/design-template.md"
 echo "  Installed living-docs:init skill"
 mkdir -p "$SKILLS_DIR/sm/init"
+cp "$SCRIPT_DIR/skills/sm/SKILL.md" "$SKILLS_DIR/sm/SKILL.md"
 cp "$SCRIPT_DIR/skills/sm/init/SKILL.md" "$SKILLS_DIR/sm/init/SKILL.md"
 echo "  Installed sm:init skill (run /sm:init in any project)"
 echo "  Done."
