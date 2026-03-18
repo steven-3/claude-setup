@@ -47,7 +47,6 @@ Restart Claude Code after setup completes.
 |--------|---------|
 | `superpowers` | TDD, debugging, planning, code review with enforcement |
 | `claude-md-management` | Documentation management |
-| `interface-design` | UI mockup generation |
 | `frontend-design` | Responsive web design |
 | `ui-ux-pro-max` | Advanced UX patterns |
 

@@ -29,14 +29,20 @@ echo "[2/7] Installing plugins..."
 PLUGINS=(
     "superpowers@claude-plugins-official"
     "claude-md-management@claude-plugins-official"
-    "interface-design@interface-design"
     "frontend-design@claude-plugins-official"
-    "ui-ux-pro-max@ui-ux-pro-max-skill"
 )
 for plugin in "${PLUGINS[@]}"; do
     echo "  Installing $plugin..."
     claude plugin install "$plugin" 2>/dev/null || echo "  (already installed or install manually)"
 done
+
+# ui-ux-pro-max requires its custom marketplace (extraKnownMarketplaces in settings.json).
+# settings.json was copied in step 1, but Claude Code may need a restart to discover it.
+echo "  Installing ui-ux-pro-max (requires custom marketplace)..."
+if ! claude plugin install "ui-ux-pro-max@ui-ux-pro-max-skill" 2>/dev/null; then
+    echo "  NOTE: ui-ux-pro-max install failed — the marketplace may not be loaded yet."
+    echo "  After restarting Claude Code, run: claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill"
+fi
 echo "  Done."
 
 # ── 3. Remove SuperClaude (if present) ──────────────────────
@@ -128,8 +134,18 @@ if [ "$MCP_MODE" = "2" ]; then
     claude mcp add -s user playwright -- npx -y @playwright/mcp@latest 2>/dev/null || true
     echo "  Added playwright (browser automation)"
 
-    claude mcp add -s user serena -- uvx --from "git+https://github.com/oraios/serena" serena start-mcp-server --context claude-code --enable-web-dashboard false --enable-gui-log-window false 2>/dev/null || true
-    echo "  Added serena (semantic code navigation)"
+    if command -v uvx &>/dev/null; then
+        claude mcp add -s user serena -- uvx --from "git+https://github.com/oraios/serena" serena start-mcp-server --context claude-code --enable-web-dashboard false --enable-gui-log-window false 2>/dev/null || true
+        echo "  Added serena (semantic code navigation)"
+    else
+        echo ""
+        echo "  WARNING: 'uvx' not found in PATH — skipping Serena."
+        echo "  Serena requires uv/uvx. Install it:"
+        echo "    Windows (PowerShell): irm https://astral.sh/uv/install.ps1 | iex"
+        echo "    macOS/Linux:          curl -LsSf https://astral.sh/uv/install.sh | sh"
+        echo "  Then add the install directory to your PATH and re-run setup."
+        echo ""
+    fi
 
     if [ -n "${TAVILY_API_KEY:-}" ]; then
         claude mcp add -s user -e TAVILY_API_KEY="$TAVILY_API_KEY" tavily -- npx -y tavily-mcp@0.1.2 2>/dev/null || true
@@ -246,7 +262,7 @@ echo "=== Setup complete! ==="
 echo ""
 echo "Architecture:"
 echo "  Base skills:   Superpowers (auto-trigger, enforcement, TDD, debugging)"
-echo "  Plugins:       interface-design, frontend-design, ui-ux-pro-max, claude-md-management"
+echo "  Plugins:       frontend-design, ui-ux-pro-max, claude-md-management"
 echo "  Persistence:   Session hooks (session-start.js, session-end.js)"
 echo "  Permissions:   Smart bash-permissions.js hook (auto-approves safe commands)"
 echo "  Status line:   Custom 2-line display with metrics + subagent tracking"

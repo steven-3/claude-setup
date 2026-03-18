@@ -15,7 +15,7 @@ This repo configures Claude Code with a full development workflow:
 | **MCP Servers** | Code nav, browser testing, web search, UI components | Docker (AIRIS gateway) or direct (individual servers) |
 | **Living Docs** | ARCHITECTURE.md and DESIGN.md stay in sync with code | Custom skill fires on conversation start + after changes |
 | **Project Template** | CLAUDE.md starter for any new project | `/init` skill auto-detects tech stack and fills it in |
-| **UI Plugins** | Design guidance for frontend work | interface-design, frontend-design, ui-ux-pro-max |
+| **UI Plugins** | Design guidance for frontend work | frontend-design, ui-ux-pro-max |
 
 ## Quick Start
 
@@ -25,7 +25,7 @@ Give Claude this repo URL and it will self-install:
 
 > Clone https://github.com/steven-3/claude-setup.git and run the setup script
 
-It will ask about API keys and Docker vs Direct MCP mode, then handle everything.
+It will ask about API keys and Docker vs Direct MCP mode, then handle everything. After restarting Claude Code, run `/init` in your project to create or update your project's CLAUDE.md.
 
 ### Or do it yourself
 
@@ -56,7 +56,6 @@ Restart Claude Code after setup completes.
 |--------|---------|
 | `superpowers` | TDD, debugging, planning, code review with enforcement |
 | `claude-md-management` | CLAUDE.md auditing and maintenance |
-| `interface-design` | UI mockup generation |
 | `frontend-design` | Responsive web design patterns |
 | `ui-ux-pro-max` | Advanced UX patterns and design systems |
 
@@ -108,6 +107,13 @@ The setup expects worktrees in `.worktrees/` (with the dot). The bash permission
 ### Docker mode requires HOST_WORKSPACE_DIR
 
 If using Docker/AIRIS mode, Serena can only see projects under the mounted `HOST_WORKSPACE_DIR` (defaults to `~/github`). Change it in `~/.claude/airis-mcp-gateway/.env` if your projects live elsewhere.
+
+### ui-ux-pro-max may need a second install
+
+This plugin uses a custom marketplace (`extraKnownMarketplaces` in settings.json). The marketplace is registered when settings.json is copied, but Claude Code may not discover it until the next restart. If installation fails during setup, restart Claude Code and run:
+```bash
+claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill
+```
 
 ### Plugin installation can fail silently
 
