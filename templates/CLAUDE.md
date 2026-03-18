@@ -17,19 +17,6 @@
 ## Project Structure
 <!-- Document the directory layout -->
 
-## Git Commands
-
-Always use the GitHub CLI (`gh`) instead of raw `git` commands when available. For example:
-
-- Use `gh repo clone` instead of `git clone`
-- Use `gh pr create` instead of manual branch push + PR creation
-- Use `gh pr checkout` instead of `git fetch` + `git checkout`
-- Use `gh pr merge` instead of `git merge`
-- Use `gh issue list/create/view` for issue management
-- Use `gh api` for GitHub API interactions
-
-This ensures consistent authentication and better integration with GitHub workflows.
-
 ## Shell & Git Permissions
 
 A PreToolUse hook (`bash-permissions.js`) handles all Bash permission classification automatically. It parses compound commands, splits on `&&`/`||`/`;`, and classifies each segment. You do not need to worry about permission prompts for safe commands — the hook handles it.
