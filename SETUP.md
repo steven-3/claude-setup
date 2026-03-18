@@ -33,6 +33,9 @@ Restart Claude Code after setup completes.
 | `hooks/statusline-command.js` | `~/.claude/hooks/` | Two-line colored status bar with metrics |
 | `hooks.json` | `~/.claude/hooks.json` | Hook event definitions (skipped if already exists) |
 | `skills/living-docs/SKILL.md` | `~/.claude/skills/living-docs/` | Auto-syncs ARCHITECTURE.md and DESIGN.md |
+| `skills/living-docs/init/SKILL.md` | `~/.claude/skills/living-docs/init/` | Creates AI-optimized ARCHITECTURE.md and DESIGN.md |
+| `skills/living-docs/init/architecture-template.md` | `~/.claude/skills/living-docs/init/` | Skeleton template for ARCHITECTURE.md |
+| `skills/living-docs/init/design-template.md` | `~/.claude/skills/living-docs/init/` | Skeleton template for DESIGN.md |
 | `airis/docker-compose.yml` | `~/.claude/airis-mcp-gateway/` | Docker stack for MCP servers |
 | `airis/mcp-config.json` | `~/.claude/airis-mcp-gateway/` | MCP server registry |
 | `templates/CLAUDE.md` | `~/.claude/templates/CLAUDE.md` | Starter CLAUDE.md for new projects |
