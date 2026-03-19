@@ -103,16 +103,21 @@ When `/pr-review-toolkit:review-pr` is invoked, run an **auto-fix loop** instead
 
 No user approval needed at any step — this runs autonomously like the worktree workflow. The user gets one final summary when it's done.
 
+After the review passes clean, run the **pre-publish verification** automatically:
+1. `node cli/index.js --version` — confirm version matches `package.json`
+2. `node cli/index.js doctor` — verify installation health
+3. `npm pack --dry-run` — verify package contents (correct files included, nothing missing)
+4. Report results to the user. Do not publish — that is manual.
+
 ## Release Checklist
 1. Bump version in `package.json`
 2. Update `CHANGELOG.md`
-3. Test with `node cli/index.js --version` and `node cli/index.js doctor`
-4. Commit
-5. After PR is squash-merged into `main`, automatically:
+3. Commit
+4. After PR is squash-merged into `main`, automatically:
    - Create git tag: `git tag v<version> && git push origin v<version>`
    - Create GitHub release: `gh release create v<version>` with notes from CHANGELOG.md
    - Delete the merged feature branch (local + remote)
-6. `npm publish` (requires user approval)
+5. `npm publish` (requires user approval)
 
 ## Versioning
 - **Patch** (0.0.x): Bug fixes, typo corrections, minor hook/skill tweaks
