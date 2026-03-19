@@ -17,6 +17,11 @@ Supermind is an npm package (`supermind-claude`) providing complete Claude Code 
 - **`/supermind-init`** onboards a project: creates CLAUDE.md, generates ARCHITECTURE.md and DESIGN.md, runs health checks
 - **`/supermind-living-docs`** keeps ARCHITECTURE.md and DESIGN.md in sync with code changes (manual trigger)
 
+### Auto-trigger: Skill Development Tools
+- When **writing or modifying** files in `skills/` or `hooks/` (SKILL.md content, hook scripts, frontmatter), invoke `working-with-claude-code` to reference the correct schemas and formats
+- When a skill is **functionally complete** (draft written or meaningfully revised), invoke `skill-creator` to run the eval/improvement loop — test prompts, benchmarking, and description optimization
+- These two don't replace each other: `working-with-claude-code` is for getting the implementation right, `skill-creator` is for verifying the skill actually works well
+
 ## Shell & Git Permissions
 
 A PreToolUse hook (`bash-permissions.js`) handles all Bash permission classification automatically. It parses compound commands, splits on `&&`/`||`/`;`, and classifies each segment. You do not need to worry about permission prompts for safe commands — the hook handles it.
