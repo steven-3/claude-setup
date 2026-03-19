@@ -127,7 +127,12 @@ ARCHITECTURE.md uses tables-over-prose because it saves tokens — the AI reads 
 
     Leave unfilled sections with `<!-- No [X] detected -->`.
 
-13. **Commit** generated or migrated docs:
+13. **Verify generated documentation**:
+    - Re-read the generated ARCHITECTURE.md (and DESIGN.md if created)
+    - Spot-check at least 5 claims against actual source code: verify constant names, function signatures, dependency lists, and behavioral descriptions match the source
+    - Fix any discrepancies before proceeding to commit
+
+14. **Commit** generated or migrated docs:
     - New project: `git commit -m "Initialize project (CLAUDE.md, ARCHITECTURE.md[, DESIGN.md])"`
     - Migrated: `git commit -m "Migrate living documentation to AI-optimized format"`
 
@@ -139,9 +144,9 @@ Different projects benefit from different tools. A database-heavy project might 
 
 ### Steps
 
-14. Ask the user: "Would you like me to check your Supermind setup and research additional tools for this project?"
+15. Ask the user: "Would you like me to check your Supermind setup and research additional tools for this project?"
 
-15. **If yes**:
+16. **If yes**:
 
     a. **Verify session hooks are firing**:
        - Check `~/.claude/sessions/` for recent session files
@@ -152,7 +157,7 @@ Different projects benefit from different tools. A database-heavy project might 
        - If already present, tell the user: "Serena directory already configured."
        - If missing, create it: `mkdir -p .serena/memories`
        - Verify `.serena/` is in `.gitignore` — if not, add it and commit
-       - Tell the user: "Created `.serena/` for semantic code navigation. Serena will be available via MCP for find-definition, find-references, and rename refactoring."
+       - Tell the user: "Created `.serena/` for semantic code navigation."
 
     c. **Research relevant tools** — dispatch **two parallel agents**:
 
@@ -173,7 +178,7 @@ Different projects benefit from different tools. A database-heavy project might 
        - Include a brief explanation of why each tool is relevant to this project
        - Do not auto-install anything — let the user decide
 
-16. **If no**: skip this phase. Initialization is complete.
+17. **If no**: skip this phase. Initialization is complete.
 
 ---
 

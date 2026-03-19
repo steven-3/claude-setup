@@ -58,7 +58,8 @@ module.exports = async function install(flags) {
 
   // Step 5: Plugins (data already merged in Step 2 via getPluginDefaults — this step is log-only)
   logger.step(5, TOTAL, 'Enabling plugins...');
-  logger.success('superpowers, frontend-design, claude-md-management, ui-ux-pro-max');
+  const pluginNames = Object.keys(pluginDefaults.enabledPlugins).map(k => k.split('@')[0]);
+  logger.success(pluginNames.join(', '));
 
   // Step 6: MCP servers
   logger.step(6, TOTAL, 'MCP server setup...');

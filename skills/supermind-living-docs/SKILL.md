@@ -31,16 +31,21 @@ Surgical edits preserve your existing formatting and avoid unnecessary diffs. Th
      - Components added or modified — update **Component Patterns**
      - Layout or animation changes — update **Layout Conventions** or **Animation Patterns**
 
-4. **If nothing meaningful changed**, say so and stop. Do not make edits for the sake of making edits.
+4. **Validate existing claims against changed files**:
+   - For each file that changed, check if ARCHITECTURE.md (or DESIGN.md) makes specific claims about that file's behavior, constants, patterns, or dependencies
+   - If it does, verify those claims are still accurate by reading the actual source
+   - Fix any stale or incorrect claims (e.g., renamed constants, changed function signatures, outdated behavioral descriptions)
 
-5. **Make surgical edits**:
+5. **If nothing meaningful changed**, say so and stop. Do not make edits for the sake of making edits.
+
+6. **Make surgical edits**:
    - Use the Edit tool to update only the sections that need changing
    - Do NOT rewrite entire files — change only the rows, entries, or paragraphs that are affected
    - Match the existing format and section structure exactly
    - Keep content factual — document what IS, not what should be
    - Always include file paths when referencing source files
 
-6. **Commit** with a descriptive message:
+7. **Commit** with a descriptive message:
    - Example: `git commit -m "Update ARCHITECTURE.md: add new API routes, update file index"`
    - If both files were updated: `git commit -m "Update living docs: [brief description of changes]"`
 

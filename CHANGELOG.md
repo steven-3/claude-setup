@@ -1,10 +1,26 @@
 # Changelog
 
+## [2.1.1] - 2026-03-18
+
+### Fixed
+- Uninstall now removes all 8 plugins (was only removing original 4 from SUPERMIND_PLUGINS)
+- `gh api` mutation regex tightened: require whitespace boundary before flags, accept `=` delimiter
+- ARCHITECTURE.md: correct constant names (SAFE_READ_COMMANDS, not SAFE_READ), fix backup description
+- Documentation accuracy: config listed as read-only only (--get, --list), add branch rename, worktree prune, bare stash
+- CHANGELOG: add missing `--raw-field` to gh api flag list
+- Install success message now dynamically lists all enabled plugins
+
+### Added
+- /supermind-init skill: verification pass after generating ARCHITECTURE.md (spot-checks claims against source)
+- /supermind-living-docs skill: change-time validation (verifies existing doc claims against changed files)
+- Worktree workflow: mandatory living docs check before merge (step 6)
+- Comment in plugins.js clarifying superpowers-marketplace is a built-in marketplace
+
 ## [2.1.0] - 2026-03-18
 
 ### Added
 - bash-permissions hook: auto-approve `base64` and `claude` CLI subcommands (config/mcp/plugin)
-- bash-permissions hook: block implicit `gh api` POST mutations (via `-f`/`-F`/`--field`/`--input` flags)
+- bash-permissions hook: block implicit `gh api` POST mutations (via `-f`/`-F`/`--field`/`--raw-field`/`--input` flags)
 - Default installed plugins: pr-review-toolkit, hookify, security-guidance, elements-of-style
 - /supermind-init skill: create `.serena/` directory automatically instead of just suggesting it
 

@@ -15,6 +15,10 @@ const SUPERMIND_PLUGINS = [
   'claude-md-management@claude-plugins-official',
   'frontend-design@claude-plugins-official',
   'ui-ux-pro-max@ui-ux-pro-max-skill',
+  'pr-review-toolkit@claude-plugins-official',
+  'hookify@claude-plugins-official',
+  'security-guidance@claude-plugins-official',
+  'elements-of-style@superpowers-marketplace',
 ];
 
 function readSettings() {

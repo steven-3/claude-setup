@@ -148,8 +148,8 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 - **Lazy command loading** — index.js requires command modules on demand
 - **Copy-on-install** — package files copied to ~/.claude/ on install, removed on uninstall
 - **Non-destructive settings merge** — preserves user customizations, Supermind entries identified by hook filename
-- **Settings backup** — settings.json.backup created before each merge
+- **Settings backup** — settings.json.backup created on first install (preserved across subsequent merges)
 - **Fallback error handling** — try-catch returns defaults (readSettings → {}, getHookFiles → KNOWN_HOOKS); non-critical failures silently skip
 - **Color-coded logging** — step(n, total, msg) progress counters, success/warn/error with ANSI symbols
-- **Command classification** — bash-permissions.js uses categorized lists (SAFE_READ, SAFE_WRITE, GIT_SAFE_READ, GIT_SAFE_WRITE) with compound command splitting
+- **Command classification** — bash-permissions.js uses categorized lists (SAFE_READ_COMMANDS, SAFE_WRITE_COMMANDS, GIT_SAFE_READ, GIT_SAFE_WRITE, GIT_STASH_DESTRUCTIVE, GIT_WORKTREE_ONLY, GIT_DANGEROUS, DANGEROUS_PATTERNS, GH_DANGEROUS_PATTERNS) with compound command splitting
 - **Session rotation** — max 20 session files in ~/.claude/sessions/, oldest pruned on save

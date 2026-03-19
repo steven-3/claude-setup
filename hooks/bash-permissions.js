@@ -141,7 +141,7 @@ const GH_DANGEROUS_PATTERNS = [
   /^gh\s+release\s+(create|delete|edit)/,
   /^gh\s+api\s+-X\s+(DELETE|PUT|PATCH|POST)/,
   /^gh\s+api\s+--method\s+(DELETE|PUT|PATCH|POST)/,
-  /^gh\s+api\s+.*(-f\s|--field\s|--raw-field\s|-F\s|--input\s)/,
+  /^gh\s+api\s+.*(\s-f[\s=]|\s--field[\s=]|\s--raw-field[\s=]|\s-F[\s=]|\s--input[\s=])/,
 ];
 
 // ─── Git global flag stripping ───────────────────────────────────────────────

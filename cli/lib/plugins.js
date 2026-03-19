@@ -16,6 +16,7 @@ function getPluginDefaults() {
       'ui-ux-pro-max-skill': {
         source: { source: 'github', repo: 'nextlevelbuilder/ui-ux-pro-max-skill' },
       },
+      // superpowers-marketplace is a built-in Claude Code marketplace — no source config needed
     },
   };
 }

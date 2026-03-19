@@ -25,12 +25,12 @@ A PreToolUse hook (`bash-permissions.js`) handles all Bash permission classifica
 - **Read-only shell**: ls, cat, head, tail, find, sed (without -i), grep, echo, pwd, jq, etc.
 - **Safe writes**: mkdir, touch, cp, mv
 - **Utilities**: base64, claude CLI (config/mcp/plugin subcommands)
-- **Read-only git**: status, diff, log, show, blame, rev-parse, check-ignore, branch listing, tag listing, config
-- **Non-destructive git writes**: add, commit, stash (push/save/list/show), worktree add, worktree list, branch create
+- **Read-only git**: status, diff, log, show, blame, rev-parse, check-ignore, branch listing, tag listing, config (read-only: --get, --list)
+- **Non-destructive git writes**: add, commit, stash (bare/push/save/list/show), worktree add, worktree list, branch create, branch rename
 - **gh CLI**: read-only gh commands (pr list/view/diff, issue list/view, repo view, gh api GET — not merge, close, delete, or mutating API calls)
 
 **Worktree-only** (auto-approved only when `cd` targets a `.worktrees/` path or CWD is inside one):
-- git merge, git worktree remove, git branch -d
+- git merge, git worktree remove, git worktree prune, git branch -d
 
 **Always requires approval**:
 - push, pull, fetch, reset, revert, rebase, clean, checkout (discarding), restore, branch -D
@@ -65,7 +65,8 @@ Use the superpowers `/using-git-worktrees` skill for worktree creation. It handl
 3. **Commit** all work in the worktree
 4. **Review** — run the superpowers `code-reviewer` agent against the changes
 5. **Fix everything** — address ALL issues found by the reviewer (critical, minor, style, naming — everything). Do not ask what to fix. Fix all of them. Then re-review until the reviewer passes clean.
-6. **Finish** — invoke `/finishing-a-development-branch` to merge back and clean up. The skill handles:
+6. **Living docs check** — before merging, check if the changes affect anything documented in ARCHITECTURE.md (or DESIGN.md). For each changed file, verify that any claims the docs make about that file's behavior, constants, or patterns are still accurate. If updates are needed, make them and commit in the worktree branch.
+7. **Finish** — invoke `/finishing-a-development-branch` to merge back and clean up. The skill handles:
    - Merging the worktree branch into the originating branch
    - Removing the worktree directory
    - Deleting the temporary branch
