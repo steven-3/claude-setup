@@ -93,8 +93,8 @@ When `/pr-review-toolkit:review-pr` is invoked, run an **auto-fix loop** instead
 
 1. **Run the review** — launch all applicable review agents (code, comments, errors, simplify) in parallel
 2. **Collect findings** — aggregate results into critical, important, and suggestions
-3. **If issues found** — spawn subagents to fix them directly (no worktree needed for pre-PR fixes). Each subagent gets a specific set of findings to address. Do not ask the user what to fix — fix everything.
-4. **Re-run the review** — after all fixes are applied, run `/pr-review-toolkit:review-pr` again
+3. **If issues found** — spawn subagents to fix them directly (no worktree needed for pre-PR fixes). Each subagent gets a specific set of findings to address. Do not ask the user what to fix — for the first 2 rounds, fix everything including suggestions. After that, fix only critical and important issues.
+4. **Re-run the review** — after all fixes are applied, run the review again. For the first 2-3 rounds, always launch all agents. After that, scale down to only the agents relevant to the remaining changes.
 5. **Repeat** steps 2-4 until the review comes back clean (zero critical and important issues; suggestions are acceptable)
 6. **Report** — tell the user:
    - What was found and fixed in each round

@@ -5,7 +5,7 @@
 ### Added
 - bash-permissions hook: auto-approve `base64` and `claude` CLI subcommands (config/mcp/plugin)
 - bash-permissions hook: block implicit `gh api` POST mutations (via `-f`/`-F`/`--field`/`--raw-field`/`--typed-field`/`--input` flags)
-- Default installed plugins: pr-review-toolkit, hookify, security-guidance, elements-of-style
+- Default installed plugins: pr-review-toolkit, security-guidance, elements-of-style
 - /supermind-init skill: create `.serena/` directory automatically instead of just suggesting it
 - /supermind-init skill: verification pass after generating ARCHITECTURE.md (spot-checks claims against source)
 - /supermind-living-docs skill: change-time validation (verifies existing doc claims against changed files)
