@@ -129,8 +129,9 @@ ARCHITECTURE.md uses tables-over-prose because it saves tokens — the AI reads 
 
 13. **Verify generated documentation**:
     - Re-read the generated ARCHITECTURE.md (and DESIGN.md if created)
-    - Spot-check at least 5 claims against actual source code: verify constant names, function signatures, dependency lists, and behavioral descriptions match the source
-    - Fix any discrepancies before proceeding to commit
+    - Spot-check at least 5 claims (or 10% of all claims, whichever is larger) against actual source code: verify constant names, function signatures, dependency lists, and behavioral descriptions match the source
+    - If discrepancies are found, fix each one and tell the user what was wrong and what was corrected
+    - If more than 30% of checked claims are wrong, warn the user that generation quality was low and suggest reviewing the full document manually
 
 14. **Commit** generated or migrated docs:
     - New project: `git commit -m "Initialize project (CLAUDE.md, ARCHITECTURE.md[, DESIGN.md])"`

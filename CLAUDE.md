@@ -87,6 +87,22 @@ Use the superpowers `/using-git-worktrees` skill for worktree creation. It handl
 ## Development Workflow
 All non-trivial changes go through the worktree workflow above. Claude handles version bumps in `package.json` and updates to `CHANGELOG.md` as part of the commit.
 
+## PR Review Workflow
+
+When `/pr-review-toolkit:review-pr` is invoked, run an **auto-fix loop** instead of just reporting findings:
+
+1. **Run the review** — launch all applicable review agents (code, comments, errors, simplify) in parallel
+2. **Collect findings** — aggregate results into critical, important, and suggestions
+3. **If issues found** — spawn subagents to fix them directly (no worktree needed for pre-PR fixes). Each subagent gets a specific set of findings to address. Do not ask the user what to fix — fix everything.
+4. **Re-run the review** — after all fixes are applied, run `/pr-review-toolkit:review-pr` again
+5. **Repeat** steps 2-4 until the review comes back clean (zero critical and important issues; suggestions are acceptable)
+6. **Report** — tell the user:
+   - What was found and fixed in each round
+   - How many review cycles were needed
+   - Any remaining suggestions that were left as-is (with reasoning)
+
+No user approval needed at any step — this runs autonomously like the worktree workflow. The user gets one final summary when it's done.
+
 ## Release Checklist
 1. Bump version in `package.json`
 2. Update `CHANGELOG.md`

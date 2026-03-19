@@ -3,6 +3,7 @@
 const fs = require('fs');
 const { PATHS } = require('./platform');
 const logger = require('./logger');
+const { getPluginDefaults } = require('./plugins');
 
 // Known Supermind hook filenames — used to identify owned entries
 const SUPERMIND_HOOKS = [
@@ -10,16 +11,8 @@ const SUPERMIND_HOOKS = [
   'cost-tracker.js', 'statusline-command.js',
 ];
 
-const SUPERMIND_PLUGINS = [
-  'superpowers@claude-plugins-official',
-  'claude-md-management@claude-plugins-official',
-  'frontend-design@claude-plugins-official',
-  'ui-ux-pro-max@ui-ux-pro-max-skill',
-  'pr-review-toolkit@claude-plugins-official',
-  'hookify@claude-plugins-official',
-  'security-guidance@claude-plugins-official',
-  'elements-of-style@superpowers-marketplace',
-];
+// Derived from plugins.js — single source of truth for plugin IDs
+const SUPERMIND_PLUGINS = Object.keys(getPluginDefaults().enabledPlugins);
 
 function readSettings() {
   try {

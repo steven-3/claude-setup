@@ -89,13 +89,13 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 |------|-----------|---------|
 | `cli/index.js` | package.json | Entry point (bin) |
 | `cli/commands/install.js` | platform, logger, settings, hooks, skills, plugins, mcp, templates | index.js |
-| `cli/commands/update.js` | platform, logger, settings, hooks, skills, templates | index.js |
-| `cli/commands/doctor.js` | platform, logger, settings, hooks, skills | index.js |
-| `cli/commands/uninstall.js` | platform, logger, settings, hooks, skills, templates | index.js |
-| `cli/commands/approve.js` | platform, logger | index.js |
+| `cli/commands/update.js` | platform, logger, settings, hooks, skills, templates, package.json | index.js |
+| `cli/commands/doctor.js` | platform, logger, settings, hooks, skills, package.json | index.js |
+| `cli/commands/uninstall.js` | platform, logger, settings, hooks, skills, templates, readline | index.js |
+| `cli/commands/approve.js` | fs, path, platform, logger | index.js |
 | `cli/lib/platform.js` | fs, path, os | All commands, all lib modules |
 | `cli/lib/logger.js` | package.json | All commands |
-| `cli/lib/settings.js` | fs, platform, logger | install, update, doctor, uninstall |
+| `cli/lib/settings.js` | fs, platform, logger, plugins | install, update, doctor, uninstall |
 | `cli/lib/hooks.js` | fs, path, platform, logger | install, update, doctor, uninstall |
 | `cli/lib/skills.js` | fs, path, platform, logger | install, update, doctor, uninstall |
 | `cli/lib/templates.js` | fs, path, platform, logger | install, uninstall |
@@ -148,8 +148,8 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 - **Lazy command loading** — index.js requires command modules on demand
 - **Copy-on-install** — package files copied to ~/.claude/ on install, removed on uninstall
 - **Non-destructive settings merge** — preserves user customizations, Supermind entries identified by hook filename
-- **Settings backup** — settings.json.backup created on first install (preserved across subsequent merges)
+- **Settings backup** — settings.json.backup created on first install (never overwritten on subsequent runs due to existence check)
 - **Fallback error handling** — try-catch returns defaults (readSettings → {}, getHookFiles → KNOWN_HOOKS); non-critical failures silently skip
 - **Color-coded logging** — step(n, total, msg) progress counters, success/warn/error with ANSI symbols
-- **Command classification** — bash-permissions.js uses categorized lists (SAFE_READ_COMMANDS, SAFE_WRITE_COMMANDS, GIT_SAFE_READ, GIT_SAFE_WRITE, GIT_STASH_DESTRUCTIVE, GIT_WORKTREE_ONLY, GIT_DANGEROUS, DANGEROUS_PATTERNS, GH_DANGEROUS_PATTERNS) with compound command splitting
+- **Command classification** — bash-permissions.js uses categorized lists (SAFE_READ_COMMANDS, SAFE_WRITE_COMMANDS, SAFE_PREFIXES, GIT_SAFE_READ, GIT_SAFE_WRITE, GIT_STASH_DESTRUCTIVE, GIT_WORKTREE_ONLY, GIT_DANGEROUS, DANGEROUS_PATTERNS, GH_DANGEROUS_PATTERNS) with compound command splitting
 - **Session rotation** — max 20 session files in ~/.claude/sessions/, oldest pruned on save
