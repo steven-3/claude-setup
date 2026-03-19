@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.1.0] - 2026-03-18
+
+### Added
+- bash-permissions hook: auto-approve `base64` and `claude` CLI subcommands (config/mcp/plugin)
+- bash-permissions hook: block implicit `gh api` POST mutations (via `-f`/`-F`/`--field`/`--raw-field`/`--typed-field`/`--input` flags)
+- Default installed plugins: pr-review-toolkit, security-guidance, elements-of-style
+- /supermind-init skill: create `.serena/` directory automatically instead of just suggesting it
+- /supermind-init skill: verification pass after generating ARCHITECTURE.md (spot-checks claims against source)
+- /supermind-living-docs skill: change-time validation (verifies existing doc claims against changed files)
+- Worktree workflow: mandatory living docs check before merge (step 6)
+
+### Changed
+- /supermind-init skill: tool discovery dispatches two parallel agents (skills + MCPs) instead of one
+- /supermind-init skill: exclude sequential-thinking-mcp from recommendations
+- /supermind-init skill: explicit guard against writing to template source (`~/.claude/templates/CLAUDE.md`)
+- Template `~/.claude/templates/CLAUDE.md`: document new auto-approved commands and gh api protections
+- Install success message now dynamically lists all enabled plugins
+- SUPERMIND_PLUGINS derived from plugins.js (single source of truth, eliminates manual sync)
+
+### Fixed
+- Uninstall now removes all plugins (SUPERMIND_PLUGINS derived from getPluginDefaults)
+- `gh api` mutation regex: handle flag-immediately-after-api, `--typed-field`, compact `-fkey=val` syntax
+- ARCHITECTURE.md: correct constant names, dependency lists, and backup description
+- Documentation accuracy: config read-only (--get, --list), branch rename, worktree prune, bare stash
+
 ## [2.0.2] - 2026-03-18
 
 ### Changed

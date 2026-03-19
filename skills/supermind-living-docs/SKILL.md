@@ -16,9 +16,11 @@ Surgical edits preserve your existing formatting and avoid unnecessary diffs. Th
    - Read `DESIGN.md` from the project root (only if it exists — its presence means this is a UI project)
 
 2. **Assess recent changes**:
-   - Run `git diff --name-only` to see which files changed
+   - Run `git diff --name-only` for unstaged changes
+   - Run `git diff --name-only --cached` for staged changes
+   - Run `git status --short` for untracked files
    - Run `git diff --stat` to understand the scope of changes
-   - If working on uncommitted changes, also check `git diff --name-only HEAD` and `git status`
+   - Combine all lists into the set of changed files for subsequent steps
 
 3. **Reason about what needs updating**:
    - Files added, removed, or renamed — update **File Index**
@@ -31,16 +33,24 @@ Surgical edits preserve your existing formatting and avoid unnecessary diffs. Th
      - Components added or modified — update **Component Patterns**
      - Layout or animation changes — update **Layout Conventions** or **Animation Patterns**
 
-4. **If nothing meaningful changed**, say so and stop. Do not make edits for the sake of making edits.
+4. **Validate existing claims against changed files**:
+   - Using the full list of changed files from step 2:
+     a. For each changed file, check if ARCHITECTURE.md (or DESIGN.md) makes specific claims about that file's behavior, constants, patterns, or dependencies
+     b. For deleted files: remove or update any documentation entries that reference them
+     c. For modified files: verify claims are still accurate by reading the actual source
+     d. Fix any stale or incorrect claims (e.g., renamed constants, changed function signatures, outdated behavioral descriptions)
+   - Report to the user what stale claims were found and corrected
 
-5. **Make surgical edits**:
+5. **If nothing meaningful changed**, say so and stop. Do not make edits for the sake of making edits.
+
+6. **Make surgical edits**:
    - Use the Edit tool to update only the sections that need changing
    - Do NOT rewrite entire files — change only the rows, entries, or paragraphs that are affected
    - Match the existing format and section structure exactly
    - Keep content factual — document what IS, not what should be
    - Always include file paths when referencing source files
 
-6. **Commit** with a descriptive message:
+7. **Commit** with a descriptive message:
    - Example: `git commit -m "Update ARCHITECTURE.md: add new API routes, update file index"`
    - If both files were updated: `git commit -m "Update living docs: [brief description of changes]"`
 
