@@ -16,7 +16,8 @@ Use these naturally when relevant — don't wait to be asked.
   - **serena** — Symbolic code navigation (run \`activate_project\` on first use)
   - **tavily** — Web search/research
   - **chrome-devtools** — Chrome debugging
-  - **shadcn** — shadcn/ui component search`,
+  - **shadcn** — shadcn/ui component search
+`,
 
   direct: `## MCP Servers
 Use these naturally when relevant — don't wait to be asked.
@@ -27,13 +28,15 @@ Use these naturally when relevant — don't wait to be asked.
 - **serena** — Symbolic code navigation; run \`activate_project\` on first use (uvx)
 - **tavily** — Web search/research (npx, requires TAVILY_API_KEY)
 - **chrome-devtools** — Chrome debugging (npx)
-- **shadcn** — shadcn/ui component search (npx)`,
+- **shadcn** — shadcn/ui component search (npx)
+`,
 
   skip: `## MCP Servers
 Use these naturally when relevant — don't wait to be asked.
 
 - **Magic MCP** — \`component_builder\`, \`component_inspiration\`, \`component_refiner\`, \`logo_search\` — use when building/refining UI components
-<!-- Add your MCP servers here. Run \`npx supermind-claude\` to set up context7, playwright, serena, tavily, and more. -->`,
+<!-- Add your MCP servers here. Run \`npx supermind-claude\` to set up context7, playwright, serena, tavily, and more. -->
+`,
 };
 
 // Matches MCP section up to next heading or end of file (with or without trailing newline)
@@ -48,7 +51,7 @@ function installTemplates(mcpMode) {
   if (mcpMode && MCP_SECTIONS[mcpMode]) {
     const content = fs.readFileSync(dest, 'utf-8');
     const updated = content.replace(MCP_SECTION_PATTERN, MCP_SECTIONS[mcpMode]);
-    if (updated === content && mcpMode !== 'docker') {
+    if (updated === content && mcpMode !== 'docker') { // docker is the template default, so no-op is expected
       logger.warn('MCP section pattern did not match template — using default MCP content');
     }
     fs.writeFileSync(dest, updated);
