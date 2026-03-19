@@ -57,10 +57,11 @@ const SAFE_READ_COMMANDS = [
   // System info
   "uname", "whoami", "hostname", "date", "env", "printenv",
   "nproc", "free", "uptime", "id",
-  // Encoding / data utilities
-  "base64", "python3", "python",
-  // Claude CLI (manage settings, plugins, MCPs)
-  "claude",
+  // Encoding utilities
+  "base64",
+  // Claude CLI management (config, MCP, plugin operations)
+  "claude config", "claude mcp", "claude plugin",
+  "claude --version", "claude -v",
   // Node/npm/npx (two-word matches)
   "node -e", "node -p", "npm ls", "npm list", "npm view", "npm info",
   "npx which", "npx tsc", "npx eslint", "npx prettier", "npx vitest",
@@ -140,6 +141,7 @@ const GH_DANGEROUS_PATTERNS = [
   /^gh\s+release\s+(create|delete|edit)/,
   /^gh\s+api\s+-X\s+(DELETE|PUT|PATCH|POST)/,
   /^gh\s+api\s+--method\s+(DELETE|PUT|PATCH|POST)/,
+  /^gh\s+api\s+.*(-f\s|--field\s|--raw-field\s|-F\s|--input\s)/,
 ];
 
 // ─── Git global flag stripping ───────────────────────────────────────────────

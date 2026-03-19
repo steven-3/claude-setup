@@ -149,6 +149,7 @@ Different projects benefit from different tools. A database-heavy project might 
 
     b. **Set up Serena** (semantic code navigation):
        - Check if `.serena/` directory exists in the project root
+       - If already present, tell the user: "Serena directory already configured."
        - If missing, create it: `mkdir -p .serena/memories`
        - Verify `.serena/` is in `.gitignore` — if not, add it and commit
        - Tell the user: "Created `.serena/` for semantic code navigation. Serena will be available via MCP for find-definition, find-references, and rename refactoring."

@@ -3,7 +3,8 @@
 ## [2.1.0] - 2026-03-18
 
 ### Added
-- Auto-approve `python3`, `base64`, and `claude` CLI commands in bash-permissions hook
+- Auto-approve `base64` and `claude` CLI subcommands (config/mcp/plugin) in bash-permissions hook
+- Block implicit `gh api` POST mutations (via `-f`/`-F`/`--field`/`--input` flags)
 - Default plugins: pr-review-toolkit, hookify, security-guidance, elements-of-style
 - /supermind-init now creates `.serena/` directory automatically instead of just suggesting it
 
