@@ -231,7 +231,7 @@ function hashSkillDir(skillDir) {
  */
 function addSkill(url, options = {}) {
   const { owner, repo, branch, path: skillPath, cloneUrl } = parseGitHubUrl(url);
-  const scope = options.global !== false ? 'global' : 'project';
+  const scope = options.global ? 'global' : 'project';
 
   // Target base directory (trusted — built from os.homedir() / constants)
   const targetBase = scope === 'global'

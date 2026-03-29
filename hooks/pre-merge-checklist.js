@@ -58,7 +58,8 @@ function checkLivingDocs(projectDir, targetBranch) {
 function checkOpenSpecArchive(projectDir) {
   const warnings = [];
   try {
-    const changesDir = path.join(projectDir, 'openspec', 'changes');
+    // projectDir is from process.env.PROJECT_DIR / process.cwd() — not user input. nosemgrep
+    const changesDir = path.join(projectDir, 'openspec', 'changes'); // nosemgrep
     if (!fs.existsSync(changesDir)) return warnings;
 
     const entries = fs.readdirSync(changesDir, { withFileTypes: true });
@@ -66,7 +67,8 @@ function checkOpenSpecArchive(projectDir) {
       if (!entry.isDirectory()) continue;
       if (entry.name === 'archive') continue;
 
-      const tasksFile = path.join(changesDir, entry.name, 'tasks.md');
+      // entry.name is from readdirSync on a validated base path — not user input. nosemgrep
+      const tasksFile = path.join(changesDir, entry.name, 'tasks.md'); // nosemgrep
       if (!fs.existsSync(tasksFile)) continue;
 
       try {
@@ -109,7 +111,7 @@ function main() {
         return;
       }
 
-      const projectDir = process.cwd();
+      const projectDir = process.env.PROJECT_DIR || process.cwd();
       const targetBranch = getTargetBranch(command);
       const warnings = [];
 
@@ -132,7 +134,7 @@ function main() {
       if (warnings.length === 0) {
         process.stdout.write('{}');
       } else {
-        process.stdout.write(JSON.stringify({ hookSpecificOutput: { warnings } }));
+        process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', warnings } }));
       }
     } catch {
       // Hook errors must never surface — exit silently

@@ -91,7 +91,7 @@ This entire lifecycle executes autonomously — no stopping to ask for permissio
 
 ### Phase 2 — Design & Plan
 - Read `ARCHITECTURE.md` and `DESIGN.md` to understand existing patterns, conventions, and constraints before proposing any approach
-- **Complex changes** — new subsystem, cross-cutting refactor, ambiguous requirements, or significant design tradeoffs: invoke `/openspec` to produce a written spec before writing any code; do not start implementation until the spec is approved
+- **Complex changes** — new subsystem, cross-cutting refactor, ambiguous requirements, or significant design tradeoffs: invoke `/openspec-explore` then `/openspec-propose` to produce a written spec before writing any code; do not start implementation until the spec is approved
 - **Simple changes** — clear, contained requirements with no meaningful design decisions open: invoke `/brainstorming` to quickly explore the approach, then write a milestone-based implementation plan
 - If the plan exceeds 8 tasks, decompose into milestones now — not during implementation
 
@@ -110,7 +110,7 @@ This entire lifecycle executes autonomously — no stopping to ask for permissio
 
 ### Phase 5 — Pre-merge
 - Compare `ARCHITECTURE.md` and `DESIGN.md` against every changed file; update any stale claims about behavior, constants, file layout, APIs, data models, or environment variables
-- Archive or delete any OpenSpec produced in Phase 2 (move to `.openspec/archive/` to preserve for reference, or delete if no longer relevant)
+- Archive or delete any OpenSpec produced in Phase 2 (move to `openspec/changes/archive/` to preserve for reference, or delete if no longer relevant)
 - Bump the version following semver: patch for bug fixes, minor for new features, major for breaking changes to public interfaces
 - Update `CHANGELOG.md` with a concise summary of what changed and why
 - Commit all pre-merge updates (docs, version, changelog) in the worktree branch
@@ -144,10 +144,10 @@ Use OpenSpec to produce a written specification before implementation when:
 - You are unsure of the right design and need to reason through options before writing code
 
 **Skills:**
-- `/openspec` — generate a structured spec from a prompt, issue, or raw requirements
-- `/openspec-review` — review and critique an existing spec for completeness, soundness, and missing edge cases
-- `/openspec-refine` — iterate on a spec based on review feedback until it is implementation-ready
-- `/openspec-to-plan` — convert an approved spec into a milestone-based implementation plan ready for Phase 3
+- `/openspec-explore` — Thinking mode: investigate, diagram, clarify. Never writes code.
+- `/openspec-propose` — Create a change with all artifacts (proposal.md, design.md, tasks.md)
+- `/openspec-apply` — Implement tasks from a change, marking complete as you go
+- `/openspec-archive` — Finalize completed change, sync specs, move to archive
 
 **When NOT to use OpenSpec:**
 - Bug fixes with a clear, identified root cause
@@ -161,11 +161,12 @@ Use OpenSpec to produce a written specification before implementation when:
 Supermind skills extend Claude Code with reusable, versioned behaviors. Skills live in `~/.claude/skills/` and are invoked with `/skill-name` during a session. Install and manage them with the `supermind` CLI:
 
 ```bash
-supermind skills install <skill-name>     # Install a skill from the registry
-supermind skills update                   # Update all installed skills to latest versions
-supermind skills update <skill-name>      # Update a specific skill only
-supermind skills list                     # List all installed skills and their current versions
-supermind skills remove <skill-name>      # Uninstall a skill and remove it from skills-lock.json
+supermind skill add <github-url>          # Install a skill (project-local by default)
+supermind skill add <github-url> --global # Install a skill globally
+supermind skill update [name]             # Update a specific skill
+supermind skill update --all              # Update all installed skills to latest versions
+supermind skill list                      # List all installed skills and their current versions
+supermind skill remove <name>             # Uninstall a skill and remove it from skills-lock.json
 ```
 
 Installed skills and their pinned versions are recorded in `~/.claude/skills-lock.json`. Commit `skills-lock.json` to your repository to share the exact skill set with your team and ensure consistent behavior across all machines.

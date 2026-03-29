@@ -114,8 +114,8 @@ OpenSpec Flow:
 | `cli/commands/doctor.js` | platform, logger, settings, hooks, skills, package.json | index.js |
 | `cli/commands/uninstall.js` | platform, logger, settings, hooks, skills, templates, readline | index.js |
 | `cli/commands/approve.js` | fs, path, platform, logger | index.js |
-| `cli/commands/skill.js` | platform, logger, vendor-skills | index.js |
-| `cli/commands/openspec.js` | platform, logger, openspec | index.js |
+| `cli/commands/skill.js` | logger, vendor-skills | index.js |
+| `cli/commands/openspec.js` | logger, openspec | index.js |
 | `cli/lib/platform.js` | fs, path, os | All commands, all lib modules |
 | `cli/lib/logger.js` | package.json | All commands |
 | `cli/lib/settings.js` | fs, platform, logger, plugins | install, update, doctor, uninstall |
@@ -124,8 +124,8 @@ OpenSpec Flow:
 | `cli/lib/templates.js` | fs, path, platform, logger | install, uninstall |
 | `cli/lib/mcp.js` | fs, path, readline, child_process, platform, logger | install |
 | `cli/lib/plugins.js` | (none) | install, settings (soft — fallback on load failure) |
-| `cli/lib/vendor-skills.js` | fs, path, os, child_process, platform, logger | skill command |
-| `cli/lib/openspec.js` | fs, path, child_process, platform, logger | openspec command |
+| `cli/lib/vendor-skills.js` | fs, path, os, crypto, child_process | skill command |
+| `cli/lib/openspec.js` | child_process, os | openspec command |
 | `hooks/bash-permissions.js` | fs, path, os | Runtime (PreToolUse) |
 | `hooks/session-start.js` | fs, path, os | Runtime (SessionStart) |
 | `hooks/session-end.js` | fs, path, os, child_process | Runtime (Stop) |
