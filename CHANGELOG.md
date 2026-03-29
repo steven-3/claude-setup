@@ -1,5 +1,33 @@
 # Changelog
 
+## [3.0.0] - 2026-03-29
+
+### Added
+- OpenSpec integration: 4 new skills (propose, explore, apply, archive) with CLI detection and fallback mode
+- Vendor skill management: `supermind skill add/update/list/remove` with skills-lock.json versioning
+- Pre-merge checklist hook: advisory warnings for living docs, OpenSpec archival, and code review
+- Improvement logger hook: append-only session tracking to ~/.claude/improvement-log.jsonl
+- Template CLAUDE.md: subagent strategy section with parallelism rules and milestone decomposition
+- Template CLAUDE.md: 6-phase development lifecycle (setup, design, implement, test, pre-merge, merge)
+- Template CLAUDE.md: OpenSpec workflow section with skill references
+- Template CLAUDE.md: vendor skills section with CLI commands
+- Project-local config scaffolding in /supermind-init (settings.local.json, .mcp.json)
+- OpenSpec project scaffolding in /supermind-init
+- CLI: `supermind openspec install/doctor` commands
+- CLI: `supermind skill add/update/list/remove` commands
+
+### Changed
+- Template CLAUDE.md: permissions section rewritten to banlist model (document what is banned, not what is allowed)
+- Template CLAUDE.md: worktree section replaced with comprehensive 6-phase lifecycle
+- Install command: 9 steps (was 7), adds OpenSpec CLI setup and verification
+- Doctor command: checks OpenSpec CLI, vendor skill integrity, improvement log
+- Update command: 5 steps (was 4), adds vendor skill check
+- Hook count: 7 (was 5)
+- Skill count: 7 directories (was 3)
+
+### Breaking
+- Template CLAUDE.md completely rewritten — run /supermind-init to merge new sections into existing projects
+
 ## [2.1.1] - 2026-03-19
 
 ### Fixed
