@@ -8,7 +8,10 @@
 ## Commands
 <!-- Fill in or run /supermind-init to auto-detect -->
 ```bash
-# npm run dev / start / build / test etc.
+# npm run dev      — start development server
+# npm run build    — production build
+# npm test         — run test suite
+# npm run lint     — lint source files
 ```
 
 ## Tech Stack
@@ -19,85 +22,179 @@
 
 ## Shell & Git Permissions
 
-A PreToolUse hook (`bash-permissions.js`) handles all Bash permission classification automatically. It parses compound commands, splits on `&&`/`||`/`;`, and classifies each segment. You do not need to worry about permission prompts for safe commands — the hook handles it.
+A PreToolUse hook (`bash-permissions.js`) classifies every Bash command automatically. It parses compound commands and splits on `&&`/`||`/`;` before classifying each segment individually. Most commands run without any prompt. Only the categories below are banned outright or require explicit approval.
 
-**Auto-approved** (standalone or in any compound):
-- **Read-only shell**: ls, cat, head, tail, find, sed (without -i), grep, echo, pwd, jq, etc.
-- **Safe writes**: mkdir, touch, cp, mv
-- **Utilities**: base64, claude CLI (config/mcp/plugin subcommands)
-- **Read-only git**: status, diff, log, show, blame, rev-parse, check-ignore, branch listing, tag listing, config (read-only: --get, --list)
-- **Non-destructive git writes**: add, commit, stash (bare/push/save/list/show), worktree add, worktree list, branch create, branch rename
-- **gh CLI**: read-only gh commands (pr list/view/diff, issue list/view, repo view, gh api GET — not merge, close, delete, or mutating API calls)
+**Banned — always requires approval:**
+- `rm`, `rmdir`, `del` — destructive file removal
+- Any command using `--force` or `--hard` flags (regardless of the base command)
+- Destructive git operations: `push` (to remote), `pull`, `fetch`, `reset`, `revert`, `rebase`, `clean`, `checkout` (when used to discard changes), `restore`, `branch -D`
+- Destructive stash operations: `stash drop`, `stash pop`, `stash clear`
+- GitHub mutations: `gh pr merge`, `gh pr close`, `gh issue close`, `gh repo delete`, `gh release create`, `gh release delete`, any mutating `gh api` call (non-GET)
+- `npm publish` — publishing to the registry always requires human confirmation
 
-**Worktree-only** (auto-approved only when `cd` targets a `.worktrees/` path or CWD is inside one):
-- git merge, git worktree remove, git worktree prune, git branch -d
+**Worktree-only** (auto-approved only when CWD is inside `.worktrees/`):
+- `git merge` — merging back from a feature worktree
+- `git worktree remove` — cleaning up a worktree directory
+- `git worktree prune` — pruning stale worktree entries
+- `git branch -d` — deleting a merged branch after cleanup
 
-**Always requires approval**:
-- push, pull, fetch, reset, revert, rebase, clean, checkout (discarding), restore, branch -D
-- stash drop, stash pop, stash clear (destructive stash operations)
-- Any command with --force or --hard
-- rm, rmdir, del
+In all other contexts, these four commands still require user approval.
 
-**User-approved commands**: The file `~/.claude/supermind-approved.json` contains commands the user has permanently approved. If asked to approve a command permanently, edit this file to add the command string. Manage via `npx supermind-claude approve "command"`.
+**Everything else is auto-approved:**
+- Read-only shell: `ls`, `cat`, `head`, `tail`, `find`, `grep`, `sed` (without `-i`), `awk`, `echo`, `pwd`, `jq`, `wc`, `sort`, `uniq`, etc.
+- Safe writes: `mkdir`, `touch`, `cp`, `mv`
+- Utilities: `base64`, `curl` (read), `node`, `npx`, `claude` CLI (config/mcp/plugin subcommands)
+- Read-only git: `status`, `diff`, `log`, `show`, `blame`, `rev-parse`, `check-ignore`, branch listing, tag listing, `config --get`/`--list`
+- Non-destructive git writes: `add`, `commit`, `stash push`/`save`/`list`/`show`, `worktree add`, `worktree list`, branch create, branch rename, `tag` (local)
+- gh read-only: `pr list`/`view`/`diff`, `issue list`/`view`, `repo view`, `gh api` GET requests, `gh run view`
 
-Compound commands with `&&`, `||`, `;` and pipes are fully supported — no need to split into separate calls.
+**User overrides**: `~/.claude/supermind-approved.json` contains commands permanently approved by the user. If asked to approve a command permanently, add the command string to that file. Manage via `supermind approve "command"`.
 
-## Worktree Development Workflow
+Compound commands with `&&`, `||`, `;`, and pipes are fully supported — no need to split into separate calls.
 
-When implementing changes beyond a trivial edit, use a worktree. The bar is low — if it touches more than 2-3 files, involves logic changes, or follows an implementation plan, it goes through a worktree.
+## Subagent Strategy
 
-Always use **subagent-driven development** for implementation.
+Always use **subagent-driven development** for implementation work. This means spawning multiple parallel subagents to execute independent tasks instead of running everything in a single thread.
 
-### Setup
+**Task granularity:** Each subagent task should touch at most 3 files. Larger tasks must be decomposed into smaller, independent pieces before dispatch. Smaller tasks are easier to parallelize, easier to review, and produce cleaner commit history.
 
-Use the superpowers `/using-git-worktrees` skill for worktree creation. It handles:
-- Directory selection (`.worktrees/` preferred, already configured)
-- `.gitignore` safety verification (adds entry + commits if missing)
-- Dependency installation (auto-detects package.json, Cargo.toml, etc.)
-- Baseline test verification (reports failures before work begins)
+**Parallelism:** Prefer 10 parallel subagents over 3 sequential ones. Any tasks that share no state and have no ordering dependency must run in parallel. Never serialize work that can parallelize — the goal is minimum wall-clock time, not minimum subagent count. If you find yourself writing "then do X, then do Y, then do Z" for three unrelated changes, those should be three parallel subagents.
 
-**Constraint:** The skill must branch from `HEAD` (the current local branch), never from a remote ref.
+**Milestone decomposition:** If an implementation plan has more than 8 tasks, split into milestones before starting. Each milestone is a coherent, independently committable unit of work. Run all tasks within a milestone in parallel, then review, commit, and advance to the next milestone. Do not start milestone N+1 until milestone N is committed and clean.
 
-### Process (runs fully autonomously — no approval needed at any step)
+**Autonomy:** Subagents execute without stopping to ask for permission. If a subagent hits a blocker that genuinely cannot be resolved by reading the codebase or making a reasonable judgment call, surface it — but most uncertainty should be resolved autonomously.
 
-1. **Create worktree** — invoke `/using-git-worktrees` as described above
-2. **Implement** all changes in the worktree directory using subagent-driven development
-3. **Commit** all work in the worktree
-4. **Review** — run the superpowers `code-reviewer` agent against the changes
-5. **Fix everything** — address ALL issues found by the reviewer (critical, minor, style, naming — everything). Do not ask what to fix. Fix all of them. Then re-review until the reviewer passes clean.
-6. **Living docs check** — before merging, check if the changes affect anything documented in ARCHITECTURE.md (or DESIGN.md). For each changed file, verify that any claims the docs make about that file's behavior, constants, or patterns are still accurate. If updates are needed, make them and commit in the worktree branch.
-7. **Finish** — invoke `/finishing-a-development-branch` to merge back and clean up. The skill handles:
-   - Merging the worktree branch into the originating branch
-   - Removing the worktree directory
-   - Deleting the temporary branch
+**What counts as independent:** Two tasks are independent if neither reads a file the other writes, they do not share mutable in-memory state, and their commit order does not matter for correctness. When in doubt, run them in parallel — conflicts in parallel commits are far cheaper to resolve than the time lost to needless serialization.
 
-### Rules
+## Development Lifecycle
 
-- The worktree branch must always be created from and merged back into the **same branch** — the one you are currently on locally. Never merge into a different branch.
-- `git merge`, `git worktree remove`, `git worktree prune`, and `git branch -d` are auto-approved **only** within this worktree workflow. In all other contexts, these still require user approval.
-- The code reviewer must find zero remaining issues before merging. If it finds problems, fix them and run the reviewer again. Repeat until clean.
-- Never skip the review step. Never skip "minor" fixes. Every finding gets fixed.
-- This entire process — create, implement, review, fix, merge, clean up — executes without stopping to ask for permission.
-- **Branch safety:** If the current branch is `main` or `master` when a code change is requested, create a feature branch first (`feature/…`, `fix/…`, or `chore/…`) before making any changes. Never commit directly to `main` or `master`.
+This entire lifecycle executes autonomously — no stopping to ask for permission at any step. The user receives one summary when the lifecycle is complete.
 
-## MCP Servers
-Use these naturally when relevant — don't wait to be asked.
+**Branch safety:** If the current branch is `main` or `master` when a code change is requested, create a feature branch first (`feature/…`, `fix/…`, or `chore/…`) before making any changes. Never commit directly to `main` or `master`.
 
-- **Magic MCP** — `component_builder`, `component_inspiration`, `component_refiner`, `logo_search` — use when building/refining UI components
-- **Airis Gateway** (Docker, localhost:9400) — cold-start sub-servers:
-  - **context7** — Library docs lookup
-  - **playwright** — Browser automation/testing
-  - **serena** — Symbolic code navigation (run `activate_project` on first use)
-  - **tavily** — Web search/research
-  - **chrome-devtools** — Chrome debugging
-  - **shadcn** — shadcn/ui component search
+**Lifecycle overview:**
+1. Setup — branch + worktree + deps + baseline
+2. Design & Plan — read docs, spec or brainstorm, milestone plan
+3. Implementation — parallel subagents, milestone commits
+4. Test & Verify — tests + code review + fix everything + re-review
+5. Pre-merge — update docs, version bump, changelog
+6. Merge — merge to originating branch, clean up worktree
+
+### Phase 1 — Setup
+- Verify the current branch is not `main`/`master`; create a feature branch if it is
+- Invoke `/using-git-worktrees` to create an isolated worktree in `.worktrees/`
+  - The skill verifies `.gitignore` safety and adds an entry if missing
+  - It installs dependencies automatically (detects package.json, Cargo.toml, pyproject.toml, etc.)
+  - It reports baseline test results before work begins
+- Branch must be created from the current local `HEAD`, never from a remote ref
+- Do not proceed if baseline tests are broken — surface failures first
+
+### Phase 2 — Design & Plan
+- Read `ARCHITECTURE.md` and `DESIGN.md` to understand existing patterns, conventions, and constraints before proposing any approach
+- **Complex changes** — new subsystem, cross-cutting refactor, ambiguous requirements, or significant design tradeoffs: invoke `/openspec` to produce a written spec before writing any code; do not start implementation until the spec is approved
+- **Simple changes** — clear, contained requirements with no meaningful design decisions open: invoke `/brainstorming` to quickly explore the approach, then write a milestone-based implementation plan
+- If the plan exceeds 8 tasks, decompose into milestones now — not during implementation
+
+### Phase 3 — Implementation
+- Execute using the Subagent Strategy: spawn parallel subagents for all independent tasks within a milestone
+- Commit at each milestone boundary with a descriptive commit message that explains why the change was made, not just what changed
+- Do not advance to the next milestone before the current one is committed
+- Do not implement beyond the written plan without flagging the addition
+
+### Phase 4 — Test & Verify
+- Run the full test suite; fix all failures before proceeding — do not leave failing tests as "known issues"
+- Invoke the `code-reviewer` agent against all changes in the branch
+- Fix **every** finding — critical, important, minor, style, naming, and suggestions. Do not ask which to fix. Fix everything.
+- Re-run the reviewer after applying fixes. Repeat until the reviewer returns zero findings.
+- Never skip the review step. Never defer "minor" fixes. Every finding is addressed before moving on.
+
+### Phase 5 — Pre-merge
+- Compare `ARCHITECTURE.md` and `DESIGN.md` against every changed file; update any stale claims about behavior, constants, file layout, APIs, data models, or environment variables
+- Archive or delete any OpenSpec produced in Phase 2 (move to `.openspec/archive/` to preserve for reference, or delete if no longer relevant)
+- Bump the version following semver: patch for bug fixes, minor for new features, major for breaking changes to public interfaces
+- Update `CHANGELOG.md` with a concise summary of what changed and why
+- Commit all pre-merge updates (docs, version, changelog) in the worktree branch
+
+### Phase 6 — Merge
+- Invoke `/finishing-a-development-branch` to merge back and clean up
+- The skill merges the worktree branch into the **originating branch only** — the branch that was active in Phase 1. Never merge into a different branch.
+- The skill removes the worktree directory and deletes the temporary branch
+- Confirm the merge succeeded and the working tree is clean before reporting done
+
+## PR Review Workflow
+
+When a pull request is ready for review, invoke `/pr-review-toolkit:review-pr` to run an auto-fix loop:
+
+1. Launch all applicable review agents in parallel (code quality, inline comments, error handling, simplification)
+2. Aggregate findings into critical, important, and suggestions
+3. Fix everything found — for the first two rounds, address all findings including suggestions; after that, focus on critical and important only
+4. Re-run all review agents after fixes are applied
+5. Repeat until the review returns zero critical and important findings
+6. Report to the user: what was found and fixed each round, how many cycles it took, and any suggestions intentionally left as-is
+
+No approval needed at any step. The loop runs autonomously and delivers one final summary.
+
+## OpenSpec Workflow
+
+Use OpenSpec to produce a written specification before implementation when:
+- The change introduces a new subsystem, service, or cross-cutting concern
+- Requirements are ambiguous, under-specified, or involve design tradeoffs with no obvious correct answer
+- The change affects public interfaces, APIs, or contracts consumed by other modules or services
+- Multiple valid approaches exist and the choice between them has long-term consequences
+- You are unsure of the right design and need to reason through options before writing code
+
+**Skills:**
+- `/openspec` — generate a structured spec from a prompt, issue, or raw requirements
+- `/openspec-review` — review and critique an existing spec for completeness, soundness, and missing edge cases
+- `/openspec-refine` — iterate on a spec based on review feedback until it is implementation-ready
+- `/openspec-to-plan` — convert an approved spec into a milestone-based implementation plan ready for Phase 3
+
+**When NOT to use OpenSpec:**
+- Bug fixes with a clear, identified root cause
+- Changes contained to a single file or module with no interface changes
+- UI copy edits, color or spacing tweaks, or minor styling adjustments
+- Tasks with fully specified requirements that leave no meaningful design decisions open
+- Anything that would take longer to spec than to implement
+
+## Vendor Skills
+
+Supermind skills extend Claude Code with reusable, versioned behaviors. Skills live in `~/.claude/skills/` and are invoked with `/skill-name` during a session. Install and manage them with the `supermind` CLI:
+
+```bash
+supermind skills install <skill-name>     # Install a skill from the registry
+supermind skills update                   # Update all installed skills to latest versions
+supermind skills update <skill-name>      # Update a specific skill only
+supermind skills list                     # List all installed skills and their current versions
+supermind skills remove <skill-name>      # Uninstall a skill and remove it from skills-lock.json
+```
+
+Installed skills and their pinned versions are recorded in `~/.claude/skills-lock.json`. Commit `skills-lock.json` to your repository to share the exact skill set with your team and ensure consistent behavior across all machines.
+
+{{MCP_SECTION}}
 
 ## UI Changes
-- When making any UI/frontend changes, invoke the `/ui-ux-pro-max` skill for design guidance and quality checks.
+
+When making any UI/frontend changes, invoke the `/ui-ux-pro-max` skill for design guidance and quality checks before finalizing the implementation.
+
+The skill provides:
+- Design token and color palette validation
+- Typography and spacing consistency checks
+- Component accessibility review
+- Responsive behavior assessment
+- Recommendations aligned with the project's existing design language
+
+Do not ship UI changes without running this skill. Design quality is a first-class concern, not a post-implementation polish step.
 
 ## Living Documentation
-- The session-start hook automatically reads `ARCHITECTURE.md` and `DESIGN.md` (if it exists) at the beginning of every conversation.
-- After code changes, update `ARCHITECTURE.md` if files, APIs, dependencies, or environment variables changed.
-- After design/UI changes, update `DESIGN.md` if colors, fonts, spacing, or components changed.
-- Run `/supermind-living-docs` to manually sync documentation with recent changes.
-- If `ARCHITECTURE.md` is missing, run `/supermind-init` to create one.
+
+Living documentation means `ARCHITECTURE.md` and `DESIGN.md` stay accurate as the code evolves. They are not written once and forgotten — they are updated as part of every development lifecycle.
+
+**Automatic loading:** The session-start hook reads `ARCHITECTURE.md` and `DESIGN.md` at the start of every conversation so Claude always has current context without being asked.
+
+**When to update `ARCHITECTURE.md`:** After any code change that affects file layout, module responsibilities, public APIs, environment variables, configuration schema, external dependencies, or build/deploy steps.
+
+**When to update `DESIGN.md`:** After any UI/design change that affects the color palette, typography, spacing scale, component library, layout patterns, or interaction conventions.
+
+**Manual sync:** Run `/supermind-living-docs` at any time to audit both documents against recent changes and update anything stale.
+
+**Bootstrap:** If `ARCHITECTURE.md` is missing, run `/supermind-init` to generate it from the current codebase. This also creates `DESIGN.md` if the project has a UI layer.
