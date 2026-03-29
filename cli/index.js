@@ -9,12 +9,16 @@ const COMMANDS = {
   doctor: () => require('./commands/doctor'),
   uninstall: () => require('./commands/uninstall'),
   approve: () => require('./commands/approve'),
+  skill: () => require('./commands/skill'),
+  openspec: () => require('./commands/openspec'),
 };
 
 function parseArgs(argv) {
   const args = argv.slice(2);
   const flags = {};
+  const positionalArgs = [];
   let command = 'install'; // default
+  let commandFound = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -25,9 +29,15 @@ function parseArgs(argv) {
     if (arg === '--mcp' && args[i + 1]) { flags.mcp = args[++i]; continue; }
     if (arg === '--list' || arg === '-l') { flags.list = true; continue; }
     if (arg === '--remove' || arg === '-r') { flags.remove = true; continue; }
-    if (!arg.startsWith('-') && COMMANDS[arg]) { command = arg; continue; }
+    if (arg === '--global') { flags.global = true; continue; }
+    if (arg === '--all') { flags.all = true; continue; }
+    if (!arg.startsWith('-')) {
+      if (!commandFound && COMMANDS[arg]) { command = arg; commandFound = true; continue; }
+      positionalArgs.push(arg);
+    }
   }
 
+  flags.args = positionalArgs;
   return { command, flags };
 }
 
@@ -43,11 +53,15 @@ function showHelp() {
     doctor      Verify installation health
     uninstall   Remove all Supermind components
     approve     Manage auto-approved commands
+    skill       Manage vendor skills (add/update/list/remove)
+    openspec    Manage OpenSpec CLI (install/doctor)
 
   Options:
     --non-interactive   Skip all prompts, use defaults
     --mcp <mode>        MCP setup: docker, direct, or skip
     --yes, -y           Auto-confirm destructive operations
+    --global            Apply to global installation
+    --all               Apply to all items
     --help, -h          Show this help
     --version, -v       Show version
 `);
