@@ -109,6 +109,45 @@ module.exports = function doctor(flags) {
     logger.warn('Docker not available (optional \u2014 needed for AIRIS mode)');
   }
 
+  // OpenSpec CLI
+  try {
+    const openspecLib = require('../lib/openspec');
+    const status = openspecLib.detectCli();
+    if (status.installed) {
+      run('OpenSpec CLI installed', true);
+      const health = openspecLib.checkHealth();
+      run('OpenSpec CLI version compatible', health.compatible,
+        health.compatible ? undefined : `found v${status.version}, need >= v${openspecLib.OPENSPEC_MIN_VERSION}`);
+    } else {
+      logger.warn('OpenSpec CLI not installed (optional \u2014 install with: npm install -g openspec)');
+    }
+  } catch {
+    logger.warn('OpenSpec CLI check skipped');
+  }
+
+  // Vendor skills
+  try {
+    const vendorSkills = require('../lib/vendor-skills');
+    const result = vendorSkills.verifySkills();
+    for (const name of result.valid) {
+      run(`Vendor skill: ${name}`, true);
+    }
+    for (const name of result.missing) {
+      run(`Vendor skill: ${name}`, false, 'directory not found');
+    }
+  } catch {
+    // No vendor skills or module not loaded — skip silently
+  }
+
+  // Improvement log
+  run('Improvement log writable', (() => {
+    const logPath = path.join(PATHS.claudeHome, 'improvement-log.jsonl');
+    try {
+      fs.appendFileSync(logPath, '', { flag: 'a' });
+      return true;
+    } catch { return false; }
+  })());
+
   // Version
   let installedVersion = 'not found';
   try {
