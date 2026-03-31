@@ -72,16 +72,12 @@ function checkSessions() {
   if (!fs.existsSync(PATHS.sessionsDir)) {
     return fail('Sessions directory missing');
   }
-  const testFile = path.join(PATHS.sessionsDir, '.doctor-test');
   try {
-    fs.writeFileSync(testFile, 'test');
+    fs.accessSync(PATHS.sessionsDir, fs.constants.W_OK);
+    return ok('Sessions directory writable');
   } catch (err) {
     return fail('Sessions directory not writable', err.message);
   }
-  try { fs.unlinkSync(testFile); } catch (err) {
-    logger.warn(`Could not clean up test file: ${err.message}`);
-  }
-  return ok('Sessions directory writable');
 }
 
 // Improvement log writable
@@ -297,10 +293,17 @@ function checkPlanning() {
 
   let allOk = true;
 
-  // Verify roadmap.md
+  // Verify roadmap.md — read once, reuse for active phase detection
   const roadmapPath = path.join(planningDir, 'roadmap.md');
+  let roadmapContent = null;
   if (fs.existsSync(roadmapPath)) {
-    ok('roadmap.md present');
+    try {
+      roadmapContent = fs.readFileSync(roadmapPath, 'utf-8');
+      ok('roadmap.md present');
+    } catch (err) {
+      fail('roadmap.md unreadable', err.message);
+      allOk = false;
+    }
   } else {
     fail('roadmap.md missing from .planning/');
     allOk = false;
@@ -321,16 +324,11 @@ function checkPlanning() {
     allOk = false;
   }
 
-  // Report active phase if detectable (reuse roadmap read from above)
-  if (fs.existsSync(roadmapPath)) {
-    try {
-      const content = fs.readFileSync(roadmapPath, 'utf-8');
-      const activeMatch = content.match(/\|\s*(\d+)\s*\|[^|]*\|\s*(?:in.progress|active|executing)/i);
-      if (activeMatch) {
-        logger.info(`Active phase: ${activeMatch[1]}`);
-      }
-    } catch (err) {
-      logger.warn(`Could not read roadmap.md: ${err.message}`);
+  // Report active phase if detectable
+  if (roadmapContent) {
+    const activeMatch = roadmapContent.match(/\|\s*(\d+)\s*\|[^|]*\|\s*(?:in.progress|active|executing)/i);
+    if (activeMatch) {
+      logger.info(`Active phase: ${activeMatch[1]}`);
     }
   }
 
