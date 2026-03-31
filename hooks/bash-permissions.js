@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// PreToolUse hook for Bash — classifies commands as safe or needing approval.
+// PreToolUse hook for Bash — blocklist-based command classification.
+// Default: everything auto-approved. Only explicitly dangerous commands require approval.
 // Splits compound commands on && || ; and checks each segment (including pipes).
 // Returns permissionDecision: "allow" | "ask"
 
@@ -12,6 +13,7 @@ const os = require('os');
 // that the user has explicitly approved for auto-allow.
 
 const APPROVED_FILE = path.join(os.homedir(), '.claude', 'supermind-approved.json');
+const SAFETY_LOG_FILE = path.join(os.homedir(), '.claude', 'safety-log.jsonl');
 
 function loadApprovedCommands() {
   try {
@@ -37,11 +39,8 @@ function isUserApproved(cmd) {
   const approved = getApprovedCommands();
   const trimmed = cmd.trim();
   for (const pattern of approved) {
-    // Exact match
     if (trimmed === pattern) return true;
-    // Prefix match (e.g., "git push" approves "git push origin main")
     if (trimmed.startsWith(pattern + ' ') || trimmed.startsWith(pattern + '\t')) return true;
-    // Regex match (patterns starting with / are treated as regex)
     if (pattern.startsWith('/') && pattern.endsWith('/')) {
       try {
         if (new RegExp(pattern.slice(1, -1)).test(trimmed)) return true;
@@ -53,95 +52,107 @@ function isUserApproved(cmd) {
   return false;
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Gate override logging ──────────────────────────────────────────────────
+// Logs every blocked command for safety audit trail.
 
-// Filesystem + shell read-only commands (match by first word or first two words)
-const SAFE_READ_COMMANDS = [
-  // Filesystem read-only
-  "ls", "cat", "head", "tail", "find", "tree", "du", "df", "wc",
-  "file", "which", "type", "readlink", "realpath", "stat", "test",
-  // Shell builtins / safe
-  "echo", "printf", "pwd", "true", "false", "set", "export",
-  "cd", "pushd", "popd", "source", ".",
-  // Text processing (read-only)
-  "grep", "rg", "awk", "sort", "uniq", "cut", "tr",
-  "diff", "comm", "paste", "column", "fmt", "fold", "rev",
-  "jq", "yq",
-  // System info
-  "uname", "whoami", "hostname", "date", "env", "printenv",
-  "nproc", "free", "uptime", "id",
-  // Encoding utilities
-  "base64",
-  // Claude CLI management (config, MCP, plugin operations)
-  "claude config", "claude mcp", "claude plugin",
-  "claude --version", "claude -v",
-  // Node/npm/npx (two-word matches)
-  "node -e", "node -p", "npm ls", "npm list", "npm view", "npm info",
-  "npx which", "npx tsc", "npx eslint", "npx prettier", "npx vitest",
-  "npx jest", "npx tsx", "npx ts-node",
-];
+function logBlockedCommand(command, reason) {
+  try {
+    const entry = {
+      timestamp: new Date().toISOString(),
+      command: command.length > 500 ? command.slice(0, 500) + '...' : command,
+      reason,
+      cwd: process.cwd(),
+    };
+    fs.appendFileSync(SAFETY_LOG_FILE, JSON.stringify(entry) + '\n');
+  } catch (_) {
+    // Non-critical — don't block on logging failure
+  }
+}
 
-// Prefix-matched safe syntax (bash conditionals)
-const SAFE_PREFIXES = [
-  "[[ ",           // bash conditional
-  "[ ",            // test
-];
+// ─── Git global flag stripping ───────────────────────────────────────────────
 
-// Safe write commands (mkdir, touch, etc.) — still checked against DANGEROUS_PATTERNS
-const SAFE_WRITE_COMMANDS = [
-  "mkdir", "touch", "cp", "mv", "tee", "xargs",
-];
+function stripGitGlobalFlags(gitArgs) {
+  let args = gitArgs;
+  args = args.replace(/^(-C\s+"[^"]*"|-C\s+'[^']*'|-C\s+\S+)\s*/g, "");
+  args = args.replace(/^(-c\s+"[^"]*"|-c\s+'[^']*'|-c\s+\S+)\s*/g, "");
+  args = args.replace(/^(--git-dir[= ]\S+)\s*/g, "");
+  args = args.replace(/^(--work-tree[= ]\S+)\s*/g, "");
+  args = args.replace(/^(--no-pager|--bare|--no-replace-objects|--literal-pathspecs|--no-optional-locks)\s*/g, "");
+  if (args !== gitArgs) return stripGitGlobalFlags(args);
+  return args;
+}
 
-// ─── Git classification lists ────────────────────────────────────────────────
+// ─── Blocklist: Dangerous flags ─────────────────────────────────────────────
 
-// Git read-only subcommands (always auto-approved)
-const GIT_SAFE_READ = [
-  "status", "diff", "log", "show", "blame", "rev-parse", "symbolic-ref",
-  "remote", "ls-files", "shortlog", "tag -l", "tag --list", "config --get",
-  "config --list", "check-ignore", "rev-list", "name-rev", "describe",
-  "for-each-ref", "cat-file", "ls-tree", "verify-commit", "branch -a",
-  "branch -r", "branch --list", "branch -l", "branch -v",
-];
-
-// Git non-destructive write subcommands (always auto-approved)
-const GIT_SAFE_WRITE = [
-  "add", "commit", "stash push", "stash save", "stash list", "stash show",
-  "worktree add", "worktree list",
-  "branch -m",
-];
-
-// Git stash subcommands that destroy stash entries
-const GIT_STASH_DESTRUCTIVE = [
-  "stash drop", "stash pop", "stash clear",
-];
-
-// Git commands auto-approved ONLY inside a worktree directory
-const GIT_WORKTREE_ONLY = [
-  "worktree remove", "worktree prune", "merge", "branch -d",
-];
-
-// Git commands that always require human approval
-const GIT_DANGEROUS = [
-  "push", "pull", "fetch", "reset", "revert", "rebase", "clean",
-  "checkout -- ", "checkout .", "restore",
-  "branch -D",
-];
-
-// ─── Dangerous patterns (checked across all command types) ───────────────────
-
-const DANGEROUS_PATTERNS = [
+const DANGEROUS_FLAGS = [
   /--force/,
   /--hard/,
-  /-rf\s/,
+];
+
+// ─── Blocklist: Filesystem destructive ──────────────────────────────────────
+
+const FILESYSTEM_BLOCKED = [
   /\brm\b/,
   /\brmdir\b/,
   /\bdel\b/,
-  // Note: redirects to /dev/null are safe and handled by allowing the base command
 ];
 
-// ─── GitHub CLI patterns ─────────────────────────────────────────────────────
+// ─── Blocklist: Process termination ─────────────────────────────────────────
 
-const GH_DANGEROUS_PATTERNS = [
+const PROCESS_BLOCKED = [
+  /^kill\b/,
+  /^killall\b/,
+  /^pkill\b/,
+];
+
+// ─── Blocklist: Publishing / deployment ─────────────────────────────────────
+
+const PUBLISH_BLOCKED = [
+  /^npm\s+publish\b/,
+  /^docker\s+push\b/,
+];
+
+// ─── Blocklist: Database CLIs with destructive SQL ──────────────────────────
+
+const DB_CLI_PATTERNS = [
+  /^(psql|mysql|mongo|mongosh|redis-cli)\b/,
+];
+
+const DB_DESTRUCTIVE_SQL = [
+  /\bDROP\b/i,
+  /\bDELETE\s+FROM\b/i,
+  /\bTRUNCATE\b/i,
+  /\bALTER\s+TABLE\b/i,
+];
+
+// ─── Blocklist: curl/wget with mutating HTTP methods ────────────────────────
+
+const HTTP_MUTATING = [
+  /\bcurl\b.*\s(-X\s*(POST|PUT|PATCH|DELETE)|--request\s*(POST|PUT|PATCH|DELETE))/,
+  /\bwget\b.*\s--method=(POST|PUT|PATCH|DELETE)/,
+  /\bwget\b.*\s--post-data\b/,
+  /\bwget\b.*\s--post-file\b/,
+];
+
+// ─── Blocklist: Git commands ────────────────────────────────────────────────
+
+const GIT_BLOCKED = [
+  /^reset\b/,
+  /^clean\b/,
+  /^rebase\b/,
+  /^revert\b/,
+  /^checkout\s+--\s/,
+  /^checkout\s+\.\s*$/,
+  /^restore\b/,
+  /^branch\s+-D\b/,
+  /^stash\s+drop\b/,
+  /^stash\s+pop\b/,
+  /^stash\s+clear\b/,
+];
+
+// ─── Blocklist: GitHub CLI mutating operations ──────────────────────────────
+
+const GH_BLOCKED = [
   /^gh\s+pr\s+merge/,
   /^gh\s+pr\s+close/,
   /^gh\s+pr\s+ready/,
@@ -155,142 +166,144 @@ const GH_DANGEROUS_PATTERNS = [
   /^gh\s+api\s+(\S+\s+)*(-f[\s=]|-f\S|--field[\s=]|--raw-field[\s=]|-F[\s=]|-F\S|--typed-field[\s=]|--input[\s=])/,
 ];
 
-// ─── Git global flag stripping ───────────────────────────────────────────────
-// Strips flags like -C <path>, -c <key=val>, --git-dir, --work-tree, --no-pager
-// that appear before the actual git subcommand.
+// ─── Git push classification ────────────────────────────────────────────────
 
-function stripGitGlobalFlags(gitArgs) {
-  let args = gitArgs;
-  // Flags that consume the next argument
-  args = args.replace(/^(-C\s+"[^"]*"|-C\s+'[^']*'|-C\s+\S+)\s*/g, "");
-  args = args.replace(/^(-c\s+"[^"]*"|-c\s+'[^']*'|-c\s+\S+)\s*/g, "");
-  args = args.replace(/^(--git-dir[= ]\S+)\s*/g, "");
-  args = args.replace(/^(--work-tree[= ]\S+)\s*/g, "");
-  // Standalone flags
-  args = args.replace(/^(--no-pager|--bare|--no-replace-objects|--literal-pathspecs|--no-optional-locks)\s*/g, "");
-  // Recurse in case multiple global flags are chained
-  if (args !== gitArgs) return stripGitGlobalFlags(args);
-  return args;
+function classifyGitPush(gitCmd) {
+  if (/--force/.test(gitCmd)) return "ask";
+
+  // Extract positional args (skip flags like -u, --set-upstream, etc.)
+  const parts = gitCmd.replace(/^push\s*/, '').split(/\s+/).filter(p => !p.startsWith('-'));
+  // parts[0] = remote (or refspec if no remote), parts[1] = refspec
+  const remote = parts.length >= 2 ? parts[0] : '';
+  const refspec = parts.length >= 2 ? parts[1] : (parts[0] || '');
+
+  // Block push to main/master
+  if (/^(main|master)(:|$)/.test(refspec)) return "ask";
+  if (remote && /^(main|master)$/.test(refspec)) return "ask";
+
+  // Everything else auto-approved (bare "git push", feature branches, etc.)
+  return "allow";
+}
+
+// ─── Git merge classification ───────────────────────────────────────────────
+
+function classifyGitMerge(inWorktree) {
+  // In worktree context, merge is auto-approved (worktree workflow)
+  if (inWorktree) return "allow";
+  // Outside worktree, require approval
+  return "ask";
 }
 
 // ─── Command classifiers ─────────────────────────────────────────────────────
 
-function classifyGhCommand(cmd) {
-  for (const pattern of GH_DANGEROUS_PATTERNS) {
-    if (pattern.test(cmd)) return "ask";
-  }
-  return "allow";
-}
-
 function classifyGitCommand(cmd, { inWorktree = false } = {}) {
   const gitCmd = stripGitGlobalFlags(cmd.slice(4).trim());
 
-  // Dangerous subcommands take priority
-  for (const d of GIT_DANGEROUS) {
-    if (gitCmd.startsWith(d)) return "ask";
+  // Dangerous flags first (--force, --hard)
+  for (const p of DANGEROUS_FLAGS) {
+    if (p.test(cmd)) return { decision: "ask", reason: "dangerous flag" };
   }
 
-  // Stash destructive subcommands (drop, pop, clear)
-  for (const s of GIT_STASH_DESTRUCTIVE) {
-    if (gitCmd.startsWith(s)) return "ask";
+  // Git push — smart branch-aware classification
+  if (/^push\b/.test(gitCmd)) {
+    const result = classifyGitPush(gitCmd);
+    return { decision: result, reason: result === "ask" ? "push to protected branch or with --force" : null };
   }
 
-  // Bare "git stash" (no subcommand) is safe — equivalent to stash push
-  if (/^stash\s*$/.test(gitCmd)) return "allow";
-
-  // Dangerous patterns (--force, --hard, rm, etc.)
-  for (const p of DANGEROUS_PATTERNS) {
-    if (p.test(cmd)) return "ask";
+  // Git merge — worktree-aware
+  if (/^merge\b/.test(gitCmd)) {
+    const result = classifyGitMerge(inWorktree);
+    return { decision: result, reason: result === "ask" ? "merge outside worktree context" : null };
   }
 
-  // Safe read-only subcommands
-  for (const r of GIT_SAFE_READ) {
-    if (gitCmd.startsWith(r)) return "allow";
+  // Worktree-only commands (worktree remove/prune, branch -d)
+  if (/^(worktree\s+remove|worktree\s+prune|branch\s+-d)\b/.test(gitCmd)) {
+    return inWorktree
+      ? { decision: "allow", reason: null }
+      : { decision: "ask", reason: "worktree-only command outside worktree" };
   }
 
-  // Safe write subcommands
-  for (const w of GIT_SAFE_WRITE) {
-    if (gitCmd.startsWith(w)) return "allow";
+  // Blocked git subcommands (reset, clean, rebase, revert, etc.)
+  for (const p of GIT_BLOCKED) {
+    if (p.test(gitCmd)) return { decision: "ask", reason: "blocked git command" };
   }
 
-  // Worktree-only commands — auto-approve only inside a worktree dir
-  for (const w of GIT_WORKTREE_ONLY) {
-    if (gitCmd.startsWith(w)) return inWorktree ? "allow" : "ask";
-  }
-
-  // Bare "git branch <name>" (create branch) — safe
-  if (/^branch\s+[^-]/.test(gitCmd)) return "allow";
-
-  // Unknown git subcommand — ask
-  return "ask";
+  // Everything else auto-approved (add, commit, status, diff, log, branch, tag, stash push, fetch, pull, etc.)
+  return { decision: "allow", reason: null };
 }
 
-function isSedSafe(cmd) {
-  // sed is safe only when it does NOT have -i (in-place edit)
-  // Note: conservative match — may flag -i in filenames/patterns, which errs on the side of asking
-  return /^sed\s/.test(cmd) && !/-i/.test(cmd);
-}
-
-// Classify a single command segment (no pipes, no compound operators)
 function classifySegment(raw, { inWorktree = false } = {}) {
   const cmd = raw.trim();
-  if (!cmd || cmd === "true" || cmd === "false") return "allow";
+  if (!cmd || cmd === "true" || cmd === "false") return { decision: "allow", reason: null };
 
-  // Check user-approved commands first (overrides all other classification)
-  if (isUserApproved(cmd)) return "allow";
+  // User-approved commands override all blocklist checks
+  if (isUserApproved(cmd)) return { decision: "allow", reason: null };
 
-  // Strip leading environment variable assignments: FOO=bar BAZ=qux cmd ...
+  // Strip leading environment variable assignments
   const withoutEnv = cmd.replace(/^(\w+=\S+\s+)+/, "");
+  const firstWord = withoutEnv.split(/\s/)[0];
 
-  // gh CLI
-  if (withoutEnv.startsWith("gh ")) return classifyGhCommand(withoutEnv);
-
-  // git
+  // ── Git commands (complex rules) ──
   if (withoutEnv.startsWith("git ")) return classifyGitCommand(withoutEnv, { inWorktree });
 
-  // sed special handling (safe only without -i)
-  if (withoutEnv.startsWith("sed ")) return isSedSafe(withoutEnv) ? "allow" : "ask";
-
-  // Safe prefixes ([[ , [ conditionals)
-  for (const p of SAFE_PREFIXES) {
-    if (withoutEnv.startsWith(p)) return "allow";
-  }
-
-  // Safe read commands — match first word
-  const firstWord = withoutEnv.split(/\s/)[0];
-  if (SAFE_READ_COMMANDS.includes(firstWord)) return "allow";
-
-  // Safe write commands — still check dangerous patterns
-  if (SAFE_WRITE_COMMANDS.includes(firstWord)) {
-    for (const p of DANGEROUS_PATTERNS) {
-      if (p.test(cmd)) return "ask";
+  // ── GitHub CLI ──
+  if (withoutEnv.startsWith("gh ")) {
+    for (const p of GH_BLOCKED) {
+      if (p.test(withoutEnv)) return { decision: "ask", reason: "mutating gh command" };
     }
-    return "allow";
+    return { decision: "allow", reason: null };
   }
 
-  // Multi-word safe read commands (e.g., "node -e", "npm ls")
-  const firstTwo = withoutEnv.split(/\s/).slice(0, 2).join(" ");
-  if (SAFE_READ_COMMANDS.includes(firstTwo)) return "allow";
+  // ── Dangerous flags (any command) ──
+  for (const p of DANGEROUS_FLAGS) {
+    if (p.test(cmd)) return { decision: "ask", reason: "dangerous flag" };
+  }
 
-  // Unknown command — ask
-  return "ask";
+  // ── Filesystem destructive ──
+  for (const p of FILESYSTEM_BLOCKED) {
+    if (p.test(withoutEnv)) return { decision: "ask", reason: "destructive filesystem command" };
+  }
+
+  // ── Process termination ──
+  for (const p of PROCESS_BLOCKED) {
+    if (p.test(withoutEnv)) return { decision: "ask", reason: "process termination" };
+  }
+
+  // ── Publishing ──
+  for (const p of PUBLISH_BLOCKED) {
+    if (p.test(withoutEnv)) return { decision: "ask", reason: "publishing command" };
+  }
+
+  // ── Database CLIs with destructive SQL ──
+  for (const p of DB_CLI_PATTERNS) {
+    if (p.test(withoutEnv)) {
+      for (const sql of DB_DESTRUCTIVE_SQL) {
+        if (sql.test(cmd)) return { decision: "ask", reason: "destructive database operation" };
+      }
+      return { decision: "allow", reason: null };
+    }
+  }
+
+  // ── curl/wget with mutating methods ──
+  for (const p of HTTP_MUTATING) {
+    if (p.test(withoutEnv)) return { decision: "ask", reason: "HTTP mutation" };
+  }
+
+  // ── Everything else: auto-approved ──
+  return { decision: "allow", reason: null };
 }
 
 // ─── Worktree context detection ──────────────────────────────────────────────
-// Checks if any segment cd's into a .worktrees/ path or references one in
-// a git worktree command.
 
 function detectWorktreeContext(segments) {
   for (const seg of segments) {
     const trimmed = seg.trim();
-    // cd into a worktree
     if (trimmed.startsWith("cd ")) {
       const target = trimmed.slice(3).trim().replace(/^["']|["']$/g, "");
       if (/[/\\]\.worktrees?[/\\]/.test(target) || /^\.worktrees?[/\\]/.test(target)) {
         return true;
       }
     }
-    // git worktree remove targeting a .worktrees/ path
     if (/git\s+worktree\s+remove\s+.*\.worktrees?[/\\]/.test(trimmed)) {
       return true;
     }
@@ -299,11 +312,8 @@ function detectWorktreeContext(segments) {
 }
 
 // ─── Compound command parser ─────────────────────────────────────────────────
-// Splits on && || ; while respecting single and double quotes.
-// Then splits each segment on pipes. If ANY part is "ask", the whole command is "ask".
 
 function classifyCommand(command, { cwdInWorktree = false } = {}) {
-  // Split compound commands on && || ; while respecting quotes
   const segments = [];
   let current = "";
   let inSingle = false;
@@ -341,13 +351,13 @@ function classifyCommand(command, { cwdInWorktree = false } = {}) {
       if (ch === "&" && command[i + 1] === "&") {
         segments.push(current);
         current = "";
-        i++; // skip second &
+        i++;
         continue;
       }
       if (ch === "|" && command[i + 1] === "|") {
         segments.push(current);
         current = "";
-        i++; // skip second |
+        i++;
         continue;
       }
       if (ch === ";") {
@@ -361,10 +371,8 @@ function classifyCommand(command, { cwdInWorktree = false } = {}) {
   }
   if (current.trim()) segments.push(current);
 
-  // Detect worktree context from cd targets or CWD
   const inWorktree = cwdInWorktree || detectWorktreeContext(segments);
 
-  // Classify each segment — if ANY is "ask", the whole command is "ask"
   for (const seg of segments) {
     const trimmed = seg.trim();
     if (!trimmed) continue;
@@ -388,11 +396,10 @@ function classifyCommand(command, { cwdInWorktree = false } = {}) {
     }
     pipeParts.push(pipeCurrent);
 
-    // Check each pipe part
     for (const pipePart of pipeParts) {
       const result = classifySegment(pipePart, { inWorktree });
-      if (result === "ask") {
-        return { decision: "ask", segment: pipePart.trim() };
+      if (result.decision === "ask") {
+        return { decision: "ask", segment: pipePart.trim(), reason: result.reason };
       }
     }
   }
@@ -411,25 +418,27 @@ function main() {
       const data = JSON.parse(input);
       const command = data.tool_input?.command || "";
 
-      // Check if CWD is inside a worktree directory
       const cwd = process.cwd();
       const cwdInWorktree = /[/\\]\.worktrees?[/\\]/.test(cwd);
 
-      const { decision, segment } = classifyCommand(command, { cwdInWorktree });
+      const { decision, segment, reason } = classifyCommand(command, { cwdInWorktree });
+
+      if (decision === "ask") {
+        logBlockedCommand(command, reason || `Segment needs approval: ${segment}`);
+      }
 
       const output = {
         hookSpecificOutput: {
           hookEventName: "PreToolUse",
           permissionDecision: decision,
           permissionDecisionReason: decision === "allow"
-            ? "All command segments classified as safe"
-            : `Segment needs approval: ${segment}`,
+            ? "Auto-approved (not on blocklist)"
+            : `Blocked: ${reason || segment}`,
         },
       };
 
       console.log(JSON.stringify(output));
     } catch (err) {
-      // On parse error, don't block — let the normal permission system handle it
       if (!(err instanceof SyntaxError)) {
         process.stderr.write(`[bash-permissions] Unexpected error: ${err.stack || err.message}\n`);
       }
@@ -443,5 +452,8 @@ function main() {
     }
   });
 }
+
+// Export for testing
+module.exports = { classifyCommand, classifySegment, classifyGitCommand, classifyGitPush, isUserApproved };
 
 main();

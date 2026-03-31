@@ -38,7 +38,7 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 | `cli/lib/plugins.js` | Plugin defaults: getPluginDefaults() returns enabledPlugins and marketplace config |
 | `cli/lib/vendor-skills.js` | Skill fetching, hashing, lock file management (skills-lock.json) |
 | `cli/lib/openspec.js` | OpenSpec CLI detection and installation |
-| `hooks/bash-permissions.js` | PreToolUse hook — classifies bash commands as allow/ask based on safe lists and approved patterns |
+| `hooks/bash-permissions.js` | PreToolUse hook — blocklist-based command classification; everything auto-approved except ~15 dangerous patterns. Logs blocked commands to ~/.claude/safety-log.jsonl |
 | `hooks/session-start.js` | SessionStart hook — loads previous session summary, injects ARCHITECTURE.md and DESIGN.md |
 | `hooks/session-end.js` | Stop hook — saves session context to ~/.claude/sessions/, tracks git branch and modified files |
 | `hooks/cost-tracker.js` | Stop hook (async) — appends session cost estimate to ~/.claude/cost-log.jsonl |
@@ -84,9 +84,11 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 │                                                                   │
 │  PreToolUse (Bash) → bash-permissions.js                         │
 │    ├─ Split compound commands on && || ;                         │
-│    ├─ Check against SAFE_* lists                                 │
-│    ├─ Check ~/.claude/supermind-approved.json                    │
-│    └─ Return allow | ask                                         │
+│    ├─ Check against blocklist (~15 dangerous patterns)           │
+│    ├─ Smart git push (block main/master + --force only)          │
+│    ├─ Check ~/.claude/supermind-approved.json (user overrides)   │
+│    ├─ Log blocked commands → ~/.claude/safety-log.jsonl          │
+│    └─ Return allow (default) | ask (blocked)                     │
 │                                                                   │
 │  PostToolUse (Bash) → pre-merge-checklist.js                     │
 │    └─ Triggered on git merge → advisory warnings to stdout       │
@@ -186,5 +188,5 @@ OpenSpec Flow:
 - **Settings backup** — settings.json.backup created on first install (never overwritten on subsequent runs due to existence check)
 - **Fallback error handling** — try-catch returns defaults (readSettings → {}, getHookFiles → KNOWN_HOOKS); non-critical failures silently skip
 - **Color-coded logging** — step(n, total, msg) progress counters, success/warn/error with ANSI symbols
-- **Command classification** — bash-permissions.js uses categorized lists (SAFE_READ_COMMANDS, SAFE_WRITE_COMMANDS, SAFE_PREFIXES, GIT_SAFE_READ, GIT_SAFE_WRITE, GIT_STASH_DESTRUCTIVE, GIT_WORKTREE_ONLY, GIT_DANGEROUS, DANGEROUS_PATTERNS, GH_DANGEROUS_PATTERNS) with compound command splitting
+- **Blocklist command classification** — bash-permissions.js uses a blocklist model (FILESYSTEM_BLOCKED, DANGEROUS_FLAGS, PROCESS_BLOCKED, PUBLISH_BLOCKED, DB_CLI_PATTERNS, DB_DESTRUCTIVE_SQL, HTTP_MUTATING, GIT_BLOCKED, GH_BLOCKED) with compound command splitting; everything not on the blocklist is auto-approved. Blocked commands logged to ~/.claude/safety-log.jsonl
 - **Session rotation** — max 20 session files in ~/.claude/sessions/, oldest pruned on save

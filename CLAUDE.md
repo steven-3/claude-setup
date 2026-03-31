@@ -51,24 +51,26 @@ Supermind is an npm package (`supermind-claude`) providing complete Claude Code 
 
 ## Shell & Git Permissions
 
-A PreToolUse hook (`bash-permissions.js`) handles all Bash permission classification automatically. It parses compound commands, splits on `&&`/`||`/`;`, and classifies each segment. You do not need to worry about permission prompts for safe commands — the hook handles it.
+A PreToolUse hook (`bash-permissions.js`) uses a **blocklist model**: everything is auto-approved by default, only explicitly dangerous commands require approval. It parses compound commands, splits on `&&`/`||`/`;`, and classifies each segment. Blocked commands are logged to `~/.claude/safety-log.jsonl`.
 
-**Auto-approved** (standalone or in any compound):
-- **Read-only shell**: ls, cat, head, tail, find, sed (without -i), grep, echo, pwd, jq, etc.
-- **Safe writes**: mkdir, touch, cp, mv
-- **Utilities**: base64, claude CLI (config/mcp/plugin subcommands)
-- **Read-only git**: status, diff, log, show, blame, rev-parse, check-ignore, branch listing, tag listing, config (read-only: --get, --list)
-- **Non-destructive git writes**: add, commit, stash (bare/push/save/list/show), worktree add, worktree list, branch create, branch rename
-- **gh CLI**: read-only gh commands (pr list/view/diff, issue list/view, repo view, gh api GET — not merge, close, delete, or mutating API calls)
+**Default: everything auto-approved** — all build/test/lint tools (node, npm, npx, python, cargo, go, make, tsc, etc.), all read-only commands, all file creation/modification, git fetch, git pull, git push to feature branches.
+
+**Blocklist (always requires approval):**
+- `rm`, `rmdir`, `del` (destructive filesystem)
+- `git reset --hard`, `git clean`, `git rebase`, `git revert` (history rewriting)
+- `git checkout .`, `git checkout -- <file>`, `git restore` (discarding changes)
+- `git push --force` (any branch), `git push` to main/master
+- `git merge` outside worktree context
+- `git stash drop/pop/clear`, `git branch -D`
+- `kill`, `killall`, `pkill` (process termination)
+- `npm publish`, `docker push` (publishing)
+- Database CLIs (`psql`, `mysql`, `mongo`, `mongosh`, `redis-cli`) with `DROP`, `DELETE FROM`, `TRUNCATE`, `ALTER TABLE`
+- `curl`/`wget` with mutating HTTP methods (`-X POST/PUT/PATCH/DELETE`, `--post-data`)
+- Any command with `--force` or `--hard`
+- Mutating `gh` CLI commands (pr merge/close, issue close/delete, repo delete, mutating API calls)
 
 **Worktree-only** (auto-approved only when `cd` targets a `.worktrees/` path or CWD is inside one):
 - git merge, git worktree remove, git worktree prune, git branch -d
-
-**Always requires approval**:
-- push, pull, fetch, reset, revert, rebase, clean, checkout (discarding), restore, branch -D
-- stash drop, stash pop, stash clear (destructive stash operations)
-- Any command with --force or --hard
-- rm, rmdir, del
 
 **User-approved commands**: `~/.claude/supermind-approved.json` contains commands permanently approved by the user. If asked to approve a command permanently, edit this file. Manage via `npx supermind-claude approve "command"`.
 

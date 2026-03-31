@@ -1,5 +1,30 @@
 # Changelog
 
+## [3.1.0] - 2026-03-30
+
+### Changed
+- **bash-permissions.js rewritten from allowlist to blocklist model** — everything is auto-approved by default; only ~15 dangerous patterns are blocklisted
+- Build/test/lint tools (node, npm, python, cargo, go, make, tsc, etc.) no longer need explicit allowlisting
+- `git push` to non-main/master branches auto-approved (without `--force`)
+- `git fetch` and `git pull` auto-approved (previously required approval)
+- `sed -i` (in-place edit) auto-approved (previously required approval)
+- Unknown/new commands auto-approved instead of requiring approval
+
+### Added
+- Database CLI awareness: `psql`, `mysql`, `mongo`, `mongosh`, `redis-cli` with destructive SQL detection (`DROP`, `DELETE FROM`, `TRUNCATE`, `ALTER TABLE`)
+- HTTP mutation detection: `curl`/`wget` with `-X POST/PUT/PATCH/DELETE`, `--post-data`, `--post-file`
+- Publishing blocklist: `npm publish`, `docker push`
+- Process termination blocklist: `kill`, `killall`, `pkill`
+- Gate override logging: blocked commands logged to `~/.claude/safety-log.jsonl` with timestamp, command, reason, and cwd
+- Module exports for testing: `classifyCommand`, `classifySegment`, `classifyGitCommand`, `classifyGitPush`, `isUserApproved`
+
+### Unchanged
+- Compound command parsing (&&, ||, ;, pipes) with quote-aware splitting
+- User override system (`~/.claude/supermind-approved.json`) with exact, prefix, and regex matching
+- Worktree context detection and auto-approval for merge/worktree remove/branch -d
+- Git global flag stripping (-C, -c, --git-dir, --work-tree, --no-pager)
+- GitHub CLI mutation blocking (pr merge/close, issue close/delete, repo delete, mutating API calls)
+
 ## [3.0.0] - 2026-03-29
 
 ### Added
