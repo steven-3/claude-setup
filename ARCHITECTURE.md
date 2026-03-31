@@ -54,6 +54,7 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 | `skills/verification-before-completion/SKILL.md` | Requires command output evidence before task completion — injected into all executors. Forked from obra/superpowers (MIT) |
 | `skills/tdd/SKILL.md` | Strict RED-GREEN-REFACTOR test-driven development — injected into write-feature and write-test executors. Forked from obra/superpowers (MIT) |
 | `skills/systematic-debugging/SKILL.md` | Four-phase root-cause debugging methodology (REPRODUCE → ISOLATE → FIX → VERIFY) — injected into fix-bug executors. Forked from obra/superpowers (MIT) |
+| `skills/brainstorming/SKILL.md` | Pre-implementation design exploration with interactive and assumptions modes — used by orchestrator Discuss phase. Forked from obra/superpowers (MIT), assumptions mode from gsd-build/get-shit-done (MIT) |
 | `templates/CLAUDE.md` | Project CLAUDE.md template with infrastructure and placeholder sections |
 | `airis/mcp-config.json` | Direct-mode MCP server configuration (npx/uvx launch commands) |
 | `.env.example` | Environment variable template (TAVILY_API_KEY, TWENTYFIRST_API_KEY) |

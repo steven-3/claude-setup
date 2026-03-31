@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.10.0] - 2026-03-31
+
+### Added
+- **Brainstorming skill** (`skills/brainstorming/SKILL.md`): pre-implementation design exploration with two modes — Interactive (default, one-question-at-a-time clarification) and Assumptions (analyzes codebase and presents assumptions for user correction, triggered by `--assumptions` flag). Used by orchestrator during Discuss phase of Project Mode. Includes scope detection (flags multi-system requests for decomposition), 2-3 approach proposals with trade-offs, section-by-section design approval, and structured output to `.planning/phases/phase-N/discussion.md`. Forked from obra/superpowers (MIT), assumptions mode inspired by gsd-build/get-shit-done (MIT).
+- Skill count: 8 directories (was 7)
+
 ## [3.9.0] - 2026-03-31
 
 ### Added
