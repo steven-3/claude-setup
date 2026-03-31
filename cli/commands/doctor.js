@@ -69,13 +69,18 @@ function checkTemplate() {
 
 // Sessions directory writable
 function checkSessions() {
+  if (!fs.existsSync(PATHS.sessionsDir)) {
+    return fail('Sessions directory missing');
+  }
   const testFile = path.join(PATHS.sessionsDir, '.doctor-test');
   try {
     fs.writeFileSync(testFile, 'test');
-  } catch {
-    return fail('Sessions directory not writable');
+  } catch (err) {
+    return fail('Sessions directory not writable', err.message);
   }
-  try { fs.unlinkSync(testFile); } catch { /* cleanup non-critical */ }
+  try { fs.unlinkSync(testFile); } catch (err) {
+    logger.warn(`Could not clean up test file: ${err.message}`);
+  }
   return ok('Sessions directory writable');
 }
 
@@ -84,8 +89,8 @@ function checkImprovementLog() {
   try {
     fs.appendFileSync(PATHS.improvementLog, '', { flag: 'a' });
     return ok('Improvement log writable');
-  } catch {
-    return fail('Improvement log not writable');
+  } catch (err) {
+    return fail('Improvement log not writable', err.message);
   }
 }
 
@@ -257,20 +262,24 @@ function checkExecutorEngine() {
   return fail(`missing: ${missing.join(', ')}`);
 }
 
-// Safety layer: verify blocklist model and approved commands file
+// Safety layer: verify blocklist model
 function checkSafety() {
   section('Safety layer');
   const hookPath = path.join(PATHS.hooksDir, 'bash-permissions.js');
-  let blocklist = false;
-  if (fs.existsSync(hookPath)) {
-    try {
-      const content = fs.readFileSync(hookPath, 'utf-8');
-      blocklist = content.includes('BLOCKED') || content.includes('blocklist');
-    } catch { /* non-critical */ }
+  if (!fs.existsSync(hookPath)) {
+    return fail('bash-permissions.js not found');
   }
 
+  let content;
+  try {
+    content = fs.readFileSync(hookPath, 'utf-8');
+  } catch (err) {
+    return fail('bash-permissions.js unreadable', err.message);
+  }
+
+  const blocklist = content.includes('BLOCKED') || content.includes('blocklist');
   if (!blocklist) {
-    return fail('bash-permissions.js missing or not using blocklist model');
+    return fail('bash-permissions.js does not use blocklist model');
   }
 
   return ok('blocklist model');
@@ -320,7 +329,9 @@ function checkPlanning() {
       if (activeMatch) {
         logger.info(`Active phase: ${activeMatch[1]}`);
       }
-    } catch { /* non-critical */ }
+    } catch (err) {
+      logger.warn(`Could not read roadmap.md: ${err.message}`);
+    }
   }
 
   return allOk;
@@ -344,8 +355,14 @@ function checkVersion() {
 
 // Vendor skills (optional, returns failure count)
 function checkVendorSkills() {
+  let vendorSkills;
   try {
-    const vendorSkills = require('../lib/vendor-skills');
+    vendorSkills = require('../lib/vendor-skills');
+  } catch {
+    return 0; // Module not available — no vendor skills to check
+  }
+
+  try {
     const result = vendorSkills.verifySkills();
     if (result.valid.length === 0 && result.missing.length === 0) return 0;
     section('Vendor skills');
@@ -353,8 +370,10 @@ function checkVendorSkills() {
     for (const name of result.valid) { ok(name); }
     for (const name of result.missing) { fail(name, 'directory not found'); failures++; }
     return failures;
-  } catch {
-    return 0;
+  } catch (err) {
+    section('Vendor skills');
+    fail('Vendor skill verification failed', err.message);
+    return 1;
   }
 }
 
@@ -378,7 +397,14 @@ module.exports = function doctor(flags) {
   console.log('  Running health checks...');
 
   let failed = 0;
-  const run = (fn) => { if (!fn()) failed++; };
+  const run = (fn) => {
+    try {
+      if (!fn()) failed++;
+    } catch (err) {
+      fail(`${fn.name || 'check'} crashed`, err.message);
+      failed++;
+    }
+  };
 
   // Foundation
   run(checkNode);
