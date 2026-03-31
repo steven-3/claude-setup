@@ -1,46 +1,37 @@
 # Supermind
 
-Complete, opinionated Claude Code setup — hooks, skills, status line, MCP servers, and living documentation.
+A unified skill engine for Claude Code — execution infrastructure meets behavioral discipline. Two modes, 15 skills, 8 hooks, zero dependencies.
 
-## Quick Install
+## Install
 
 ```bash
-npm install -g supermind-claude
-supermind-claude
+npx supermind-claude
 ```
 
-Or run without installing: `npx supermind-claude`
+Or install globally: `npm install -g supermind-claude && supermind-claude`
 
-## What Gets Installed
+Then run `/supermind-init` in any project to generate CLAUDE.md, ARCHITECTURE.md, and DESIGN.md.
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| Hooks | ~/.claude/hooks/ | Session persistence, bash permissions, status line, cost tracking |
-| Skills | ~/.claude/skills/ | /supermind-init, /supermind-living-docs |
-| Settings | settings.json | Thinking mode, effort level, hook registration |
-| Templates | ~/.claude/templates/ | CLAUDE.md project template |
+## Two Modes
 
-## Project Setup
+**`/quick`** — Single-executor path for small tasks (bug fixes, renames, config changes). Fast and stateless.
 
-After installing, run `/supermind-init` in any project to:
-1. Create or merge CLAUDE.md with project-specific config
-2. Generate ARCHITECTURE.md (and DESIGN.md for UI projects)
-3. Check setup health and discover relevant tools
+**`/project`** — Full six-phase lifecycle for features and refactors: discuss, research, plan, execute (parallel waves), verify, ship. Coordinates fresh-context subagents with injected methodology skills.
 
-## Living Documentation
+**`/supermind`** auto-detects which mode fits your task and routes accordingly.
 
-- **Auto-read**: Session-start hook reads ARCHITECTURE.md and DESIGN.md at every conversation start
-- **Manual sync**: Run `/supermind-living-docs` to update docs after code changes
+## What's Included
 
-## Status Line
-
-Two-line terminal display showing: user, model, path, git branch, context usage, thinking level, active agents, and session cost.
-
-## MCP Servers
-
-Choose during setup:
-- **Docker** (AIRIS gateway): Single endpoint routing to context7, playwright, serena, tavily, chrome-devtools, shadcn
-- **Direct**: Individual servers via npx/uvx
+| Component | Count | Purpose |
+|-----------|-------|---------|
+| Skills | 15 | Complexity router, TDD, debugging, brainstorming, code review, planning, execution, worktrees, and more |
+| Hooks | 8 | Bash permissions (blocklist), session persistence, cost tracking, status line, context monitoring |
+| Agents | 1 | Code reviewer for structured review in verify phase |
+| Executor engine | 3 modules | Task packets, wave parallelism, agent prompt templates (cli/lib/) |
+| Safety layer | 1 hook | Blocklist-based command classification with gate override logging |
+| Living docs | 2 skills | Project onboarding (/supermind-init) and doc sync (/supermind-living-docs) |
+| Vendor skills | CLI | Install third-party skills from GitHub with hash-locked integrity |
+| Plugin | manifest | Dual distribution: npm package + Claude Code plugin |
 
 ## Commands
 
@@ -50,20 +41,17 @@ Choose during setup:
 | `supermind-claude update` | Refresh hooks, skills, templates |
 | `supermind-claude doctor` | Verify installation health |
 | `supermind-claude uninstall` | Remove all components |
-| `supermind-claude approve "cmd"` | Permanently auto-approve a command |
+| `supermind-claude approve "cmd"` | Auto-approve a blocked command |
+| `supermind-claude skill add <url>` | Install vendor skill from GitHub |
+| `supermind-claude skill update [name]` | Update vendor skill(s) |
+| `supermind-claude skill list` | List installed vendor skills |
+| `supermind-claude skill remove <name>` | Remove vendor skill |
 
-## Approved Commands
+## MCP Servers
 
-Permanently auto-approve specific commands that the bash-permissions hook would normally flag:
-
-```bash
-supermind-claude approve "git push"        # exact/prefix match
-supermind-claude approve "/npm run .*/"    # regex match
-supermind-claude approve --list            # see all approved
-supermind-claude approve --remove "git push"  # remove approval
-```
-
-Or tell Claude: "add that to my approved commands" — it knows how to edit the file directly.
+Optional. Choose during setup:
+- **Docker** (AIRIS gateway): Single endpoint routing to context7, playwright, serena, tavily, chrome-devtools, shadcn
+- **Direct**: Individual servers via npx/uvx
 
 ## Platforms
 
@@ -71,6 +59,8 @@ Windows, macOS, and Linux. Requires Node.js >= 18.
 
 ## Troubleshooting
 
-Run `supermind-claude doctor` to check installation health. Common issues:
-- **Status line not showing**: Ensure Node.js is in PATH
-- **Hooks not firing**: Run `supermind-claude update` to re-register
+Run `supermind-claude doctor` to check installation health.
+
+## Credits
+
+Methodology skills forked from [obra/superpowers](https://github.com/obra/superpowers) (MIT) by Jesse Vincent and the Prime Radiant team. Execution architecture inspired by [gsd-build/get-shit-done](https://github.com/gsd-build/get-shit-done) (MIT). Both adapted and rebuilt as Supermind-native implementations.

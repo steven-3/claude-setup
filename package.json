@@ -1,7 +1,7 @@
 {
   "name": "supermind-claude",
-  "version": "3.18.0",
-  "description": "Complete, opinionated Claude Code setup — hooks, skills, status line, MCP servers, and living documentation",
+  "version": "3.19.0",
+  "description": "Unified skill engine for Claude Code — execution infrastructure meets behavioral discipline",
   "bin": {
     "supermind-claude": "cli/index.js",
     "supermind": "cli/index.js"

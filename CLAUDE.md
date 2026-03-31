@@ -1,39 +1,50 @@
 # Supermind
 
 ## Project Overview
-Supermind is an npm package (`supermind-claude`) providing complete Claude Code setup — hooks, skills, status line, MCP servers, and living documentation.
+Supermind is a unified skill engine for Claude Code — combining execution infrastructure (fresh-context workers, wave parallelism, context monitoring) with behavioral discipline (TDD, systematic debugging, anti-rationalization, verification gates). Distributed as both an npm package (`supermind-claude`) and a Claude Code plugin.
 
 **File organization:**
-- `cli/` — Installer commands (install, update, doctor, uninstall, skill)
-- `cli/lib/` — Shared utilities (paths, settings, hooks, skills, templates, mcp, logger, vendor-skills, plugin)
-- `hooks/` — Runtime hooks copied to `~/.claude/hooks/` (8 hooks: bash-permissions, session-start, session-end, cost-tracker, statusline, pre-merge-checklist, improvement-logger, context-monitor)
-- `skills/` — SKILL.md files copied to `~/.claude/skills/` (15 dirs: supermind, supermind-init, supermind-living-docs, anti-rationalization, verification-before-completion, tdd, systematic-debugging, brainstorming, code-review, using-git-worktrees, writing-plans, executing-plans, finishing-branches, quick, project)
+- `cli/` — Installer commands (install, update, doctor, uninstall, approve, skill)
+- `cli/lib/` — Shared utilities (platform, settings, hooks, skills, templates, mcp, logger, vendor-skills, plugin, planning, executor, agents)
+- `hooks/` — Runtime hooks copied to `~/.claude/hooks/` (8 hooks)
+- `skills/` — SKILL.md files copied to `~/.claude/skills/` (15 skill directories)
 - `agents/` — Agent definition .md files copied to `~/.claude/agents/` (1 agent: code-reviewer)
 - `templates/` — CLAUDE.md project template copied to `~/.claude/templates/`
 - `.claude-plugin/` — Claude Code plugin manifest for dual distribution (npm + plugin)
 
 ## Skill System
-- **`/supermind`** is the complexity router — auto-detects task scope and routes to `/quick` or `/project` mode. Announces its decision with an escape hatch. Supports all composable flags from both modes. This is the default entry point; `/quick` and `/project` can still be invoked directly.
+
+### Entry Points
+- **`/supermind`** is the complexity router — auto-detects task scope and routes to `/quick` or `/project` mode. Announces its decision with an escape hatch. This is the default entry point; `/quick` and `/project` can still be invoked directly.
 - **`/project`** activates Project Mode — full six-phase lifecycle (discuss, research, plan, execute waves, verify, ship). Supports `--skip-discuss`, `--skip-research`, `--assumptions`, `--max-parallel N` flags.
 - **`/quick`** or `quick:` prefix activates Quick Mode — single-executor path for small tasks (bug fixes, renames, config changes, tests). Supports `--with-research` and `--with-discuss` flags.
-- **`/supermind-init`** onboards a project: creates CLAUDE.md, generates ARCHITECTURE.md and DESIGN.md, runs health checks
-- **`/supermind-living-docs`** keeps ARCHITECTURE.md and DESIGN.md in sync with code changes (manual trigger)
+- **`/supermind-init`** onboards a project: creates CLAUDE.md, generates ARCHITECTURE.md and DESIGN.md, runs health checks.
+- **`/supermind-living-docs`** keeps ARCHITECTURE.md and DESIGN.md in sync with code changes (manual trigger).
 
-## Vendor Skill System
-- `supermind skill add <github-url> [--global]` — install from GitHub repo
-- `supermind skill update [name] [--all]` — refresh from source
-- `supermind skill list` — show installed with source and version
-- `supermind skill remove <name>` — remove skill and lock entry
-- Global lock: `~/.claude/skills-lock.json`, Project lock: `.claude/skills-lock.json`
+### Methodology Skills
+Behavioral skills injected into executors based on task type. Forked from [obra/superpowers](https://github.com/obra/superpowers) (MIT), adapted for the executor injection model.
+
+| Skill | Injected Into | Purpose |
+|-------|--------------|---------|
+| anti-rationalization | All executors | Blocks common LLM rationalizations for skipping steps |
+| verification-before-completion | All executors | Requires command output evidence before success claims |
+| tdd | write-feature, write-test | Strict red-green-refactor with iron law |
+| systematic-debugging | fix-bug | Four-phase root-cause-first debugging |
+| brainstorming | Orchestrator discuss phase | Pre-implementation design exploration, assumptions mode |
+| code-review | Verify phase | Structured review with critical/important/suggestion tiers |
+| writing-plans | Orchestrator plan phase | Atomic task plans with dependency graphs |
+| executing-plans | Execute phase (orchestrator) | Wave-based execution with progress tracking |
+| using-git-worktrees | Executors (when scope warrants) | Automated worktree creation with safety checks |
+| finishing-branches | Ship phase | PR/keep/discard options; never merges to main/master |
 
 ## Hook Reference
 | Hook | Event | Matcher | Purpose |
 |------|-------|---------|---------|
-| bash-permissions.js | PreToolUse | Bash | Command permission classification |
-| session-start.js | SessionStart | — | Load session + living docs |
+| bash-permissions.js | PreToolUse | Bash | Blocklist-based command permission classification |
+| session-start.js | SessionStart | — | Load session + living docs + .planning/ resume |
 | session-end.js | Stop | — | Save session summary |
 | cost-tracker.js | Stop | — | Log session cost |
-| statusline-command.js | statusLine | — | Two-line terminal display |
+| statusline-command.js | statusLine | — | Two-line terminal display + context metrics |
 | pre-merge-checklist.js | PostToolUse | Bash | Advisory pre-merge warnings |
 | improvement-logger.js | Stop | — | Session improvement tracking |
 | context-monitor.js | PostToolUse | — | Context window usage warnings at 35%/25% remaining |
@@ -61,7 +72,7 @@ A PreToolUse hook (`bash-permissions.js`) uses a **blocklist model**: everything
 **Worktree-only** (auto-approved only when `cd` targets a `.worktrees/` path or CWD is inside one):
 - git merge, git worktree remove, git worktree prune, git branch -d
 
-**User-approved commands**: `~/.claude/supermind-approved.json` contains commands permanently approved by the user. If asked to approve a command permanently, edit this file. Manage via `npx supermind-claude approve "command"`.
+**User-approved commands**: `~/.claude/supermind-approved.json` contains commands permanently approved by the user. Manage via `npx supermind-claude approve "command"`.
 
 Compound commands with `&&`, `||`, `;` and pipes are fully supported — no need to split into separate calls.
 
@@ -100,6 +111,27 @@ Create a worktree in `.worktrees/` from the current branch:
 - Never skip the review step. Never skip "minor" fixes. Every finding gets fixed.
 - This entire process — create, implement, review, fix, merge, clean up — executes without stopping to ask for permission.
 
+## State Management
+
+Project Mode writes state to `.planning/` in the project root:
+
+```
+.planning/
+  roadmap.md                  # Phase overview with status
+  config.json                 # Model profile, flags, safety overrides
+  phases/
+    phase-N/
+      discussion.md           # Captured decisions
+      research/               # 4 researcher outputs
+      plans/                  # Atomic task plans with dependency graph
+      tasks/                  # Individual task specs (one per executor)
+      progress.md             # Wave execution progress
+```
+
+All Markdown. Human-readable. Git-committable. Session-start hook reads `.planning/progress.md` to resume across sessions.
+
+Quick Mode writes nothing — fully stateless.
+
 ## Development Workflow
 All non-trivial changes go through the worktree workflow above. Claude handles version bumps in `package.json` and updates to `CHANGELOG.md` as part of the commit.
 
@@ -107,27 +139,18 @@ All non-trivial changes go through the worktree workflow above. Claude handles v
 
 **Branch safety:** If the current branch is `main` or `master` when a code change is requested, create a feature branch first (`feature/…`, `fix/…`, or `chore/…`) before making any changes. Never commit directly to `main` or `master`.
 
-## PR Review Workflow
+## Vendor Skill System
+- `supermind skill add <github-url> [--global]` — install from GitHub repo
+- `supermind skill update [name] [--all]` — refresh from source
+- `supermind skill list` — show installed with source and version
+- `supermind skill remove <name>` — remove skill and lock entry
+- Global lock: `~/.claude/skills-lock.json`, Project lock: `.claude/skills-lock.json`
 
-When `/pr-review-toolkit:review-pr` is invoked, run an **auto-fix loop** instead of just reporting findings:
+## Distribution
 
-1. **Run the review** — launch all applicable review agents (code, comments, errors, simplify) in parallel
-2. **Collect findings** — aggregate results into critical, important, and suggestions
-3. **If issues found** — spawn subagents to fix them directly (no worktree needed for pre-PR fixes). Each subagent gets a specific set of findings to address. Do not ask the user what to fix — for the first 2 rounds, fix everything including suggestions. After that, fix only critical and important issues.
-4. **Re-run the review** — after all fixes are applied, run the review again. For the first 2-3 rounds, always launch all agents. After that, scale down to only the agents relevant to the remaining changes.
-5. **Repeat** steps 2-4 until the review comes back clean (zero critical and important issues; suggestions are acceptable)
-6. **Report** — tell the user:
-   - What was found and fixed in each round
-   - How many review cycles were needed
-   - Any remaining suggestions that were left as-is (with reasoning)
-
-No user approval needed at any step — this runs autonomously like the worktree workflow. The user gets one final summary when it's done.
-
-After the review passes clean, run the **pre-publish verification** automatically:
-1. `node cli/index.js --version` — confirm version matches `package.json`
-2. `node cli/index.js doctor` — verify installation health
-3. `npm pack --dry-run` — verify package contents (correct files included, nothing missing)
-4. Report results to the user. Do not publish — that is manual.
+Dual npm + plugin:
+- **npm package** (`supermind-claude`): `npx supermind-claude install` copies hooks, skills, agents, templates to `~/.claude/`. Merges settings non-destructively.
+- **Claude Code plugin** (`.claude-plugin/plugin.json`): registers as a plugin for skill/hook/agent discovery and future marketplace support.
 
 ## Release Checklist
 1. Bump version in `package.json`
@@ -163,8 +186,8 @@ Use these naturally when relevant — don't wait to be asked.
 
 ## Hooks
 Session persistence hooks fire automatically:
-- `SessionStart`: Loads previous session summary (~500-700 tokens), reads ARCHITECTURE.md and DESIGN.md
-- `Stop`: Saves session context for next session + cost tracking
+- `SessionStart`: Loads previous session summary (~500-700 tokens), reads ARCHITECTURE.md and DESIGN.md, detects active `.planning/` sessions
+- `Stop`: Saves session context for next session + cost tracking + improvement logging
 
 ## Memory Protocol
 - Project-specific rules belong in this file (CLAUDE.md)

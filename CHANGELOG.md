@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.19.0] - 2026-03-31
+
+### Changed
+- **CLAUDE.md**: Complete rewrite for v4 unified engine architecture. Added methodology skills table with injection targets, State Management section for `.planning/` directory, Distribution section for dual npm + plugin. Removed PR Review Workflow section (was referencing pr-review-toolkit plugin). Reorganized Skill System into Entry Points and Methodology Skills subsections. Updated all hook descriptions to match current implementations.
+- **ARCHITECTURE.md**: Complete rewrite for v4. Added architecture diagram showing complexity router → executor engine → safety layer → infrastructure. File Index now organized by category (CLI, Libraries, Hooks, Skills, Other) with accurate line counts. Added executor engine data flow (buildTaskPacket, buildWavePlan, executeTask). Added `.planning/` state management to data flow diagram. Added path-safety and executor injection model to Key Patterns.
+- **README.md**: Rewritten for v4. New tagline reflecting unified skill engine identity. Added Two Modes section (/quick and /project). Expanded What's Included table covering all component categories. Added vendor skill CLI commands. Added Credits section attributing obra/superpowers (MIT) and gsd-build/get-shit-done (MIT).
+- **package.json**: Updated description to match v4 identity.
+- Sub-project 5.3 of Supermind v4 Unified Engine design.
+
 ## [3.18.0] - 2026-03-31
 
 ### Changed
