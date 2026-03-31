@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.9.0] - 2026-03-31
+
+### Added
+- **Systematic debugging skill** (`skills/systematic-debugging/SKILL.md`): four-phase root-cause debugging methodology — injected into `fix-bug` executors via `SKILL_MAP`. Enforces "always find root cause before attempting fixes" iron law with mandatory REPRODUCE → ISOLATE → FIX → VERIFY phases. Includes anti-patterns table, escalation rule (stop after 3 failed fixes), and verification checklist. Forked from obra/superpowers (MIT).
+- Skill count: 7 directories (was 6)
+
 ## [3.8.0] - 2026-03-31
 
 ### Added
