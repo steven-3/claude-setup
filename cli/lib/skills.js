@@ -75,13 +75,9 @@ const KNOWN_AGENTS = ['code-reviewer'];
 
 function getAgentFiles() {
   const agentsSource = path.join(getPackageRoot(), 'agents');
-  try {
-    return fs.readdirSync(agentsSource).filter(f =>
-      f.endsWith('.md') && fs.statSync(path.join(agentsSource, f)).isFile()
-    );
-  } catch {
-    return [];
-  }
+  return fs.readdirSync(agentsSource).filter(f =>
+    f.endsWith('.md') && fs.statSync(path.join(agentsSource, f)).isFile()
+  );
 }
 
 function installAgents() {
