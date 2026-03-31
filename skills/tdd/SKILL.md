@@ -18,6 +18,12 @@ This is not a suggestion. This is a constraint. Violate it and the completion co
 
 Write code before the test? Delete it. Start over. No exceptions — don't keep it as "reference," don't "adapt" it, don't look at it. Delete means delete.
 
+## Scope
+
+**Always use TDD for:** new features, bug fixes, refactoring, behavior changes.
+
+**Legitimate exceptions:** configuration-only changes (no logic), generated code (codegen output), throwaway prototypes (delete before real implementation). If a task is purely config and has no testable behavior, skip TDD — but if it has logic, it gets tests.
+
 ## Step Zero: Detect the Test Framework
 
 Before writing any code or tests, detect the project's test setup:
@@ -102,6 +108,16 @@ Go back to RED for the next behavior. One test at a time. Always.
 | "I need to explore first" | Fine. Throw away the exploration. Then start with TDD. Exploration code is not production code. |
 | "Tests are too hard to write for this" | Hard-to-test code is hard-to-use code. Listen to the test — it's telling you the design needs work. |
 | "I already manually tested it" | Manual testing is ad-hoc. No record, can't re-run, easy to forget cases. Automated tests are systematic. |
+
+## Mocking Rules
+
+Mocks are a last resort, not a convenience. Three rules:
+
+1. **Never test mock behavior.** If your assertion verifies what a mock returns, you are testing your test setup, not your code. Assert against real output.
+2. **Never add test-only methods to production code.** No `_testReset()`, no `setForTesting()`. If you need to observe internal state, the design is wrong — expose behavior, not internals.
+3. **Never mock what you don't understand.** If you can't explain what the real dependency does, you can't write a meaningful mock. Understand first, then decide if a mock is truly needed.
+
+Mocks are acceptable only for: external network services, system clocks, and non-deterministic inputs. Everything else should use real code.
 
 ## Why Order Matters
 
