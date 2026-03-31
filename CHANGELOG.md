@@ -1,5 +1,27 @@
 # Changelog
 
+## [3.5.0] - 2026-03-31
+
+### Added
+- **Planning state management** (`cli/lib/planning.js`): new module providing read/write utilities for `.planning/` directory structure used by Project Mode
+  - `initPlanning(projectRoot, config)` — create `.planning/` with `roadmap.md` and `config.json`
+  - `initPhase(projectRoot, phaseNum)` — create `phases/phase-N/` with `discussion.md`, `research/`, `plans/`, `tasks/`, `progress.md`
+  - `readProgress(projectRoot, phaseNum?)` — read wave execution state with summary (total/done/pending/failed/currentWave)
+  - `writeProgress(projectRoot, phaseNum, data)` — update `progress.md` with current wave state
+  - `readRoadmap(projectRoot)` / `updateRoadmap(projectRoot, phaseNum, status)` — parse and update phase roadmap
+  - `readConfig(projectRoot)` / `writeConfig(projectRoot, config)` — manage `config.json` (model profile, flags)
+  - `writeDiscussion(projectRoot, phaseNum, content)` — append to phase discussion log
+  - `writeResearch(projectRoot, phaseNum, agentName, content)` — write researcher output files
+  - `writePlan(projectRoot, phaseNum, planData)` — write plans with dependency frontmatter and wave structure
+  - `writeTask(projectRoot, phaseNum, taskId, taskSpec)` — write individual task specs with acceptance criteria
+  - `getPlanningRoot(startDir)` — walk up directory tree to find `.planning/` (like git finds `.git/`)
+  - `isActive(projectRoot)` — check if any phases are non-completed
+  - All paths validated via `safeJoin` pattern (no path traversal); filenames validated with `safeFilenameSegment`
+- **Session-start hook**: `.planning/` awareness — detects active planning sessions and reports phase, wave, and task progress on session start
+
+### Changed
+- Session-start hook (`session-start.js`): all `path.join` calls migrated to `safeJoin` helper for path traversal protection
+
 ## [3.4.0] - 2026-03-31
 
 ### Added

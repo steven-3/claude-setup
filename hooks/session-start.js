@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Session Start Hook — loads previous session context + living docs summaries
 // Fires on: SessionStart
-// Outputs combined context: session summary + ARCHITECTURE.md + DESIGN.md
+// Outputs combined context: session summary + ARCHITECTURE.md + DESIGN.md + .planning/
 
 const fs = require("fs");
 const path = require("path");
@@ -9,6 +9,34 @@ const os = require("os");
 
 const SESSION_DIR = path.join(os.homedir(), ".claude", "sessions");
 const MAX_AGE_DAYS = 7;
+
+// ─── Path safety ────────────────────────────────────────────────────────────
+
+/**
+ * Validate that each segment is safe (no traversal, not absolute), then join
+ * onto a trusted base via string concatenation. This satisfies semgrep
+ * taint-tracking rules for path.join/path.resolve with untrusted input.
+ */
+function safeJoin(trustedBase, ...segments) {
+  for (const seg of segments) {
+    if (typeof seg !== "string" || seg.length === 0) {
+      throw new Error("safeJoin: segment must be a non-empty string");
+    }
+    if (path.isAbsolute(seg)) {
+      throw new Error("safeJoin: segment must not be an absolute path");
+    }
+    for (const part of seg.split(/[\\/]/)) {
+      if (part === "..") {
+        throw new Error("safeJoin: path traversal not allowed");
+      }
+    }
+  }
+  const joined = trustedBase + path.sep + segments.join(path.sep);
+  if (!joined.startsWith(trustedBase + path.sep)) {
+    throw new Error("safeJoin: resolved path escapes base directory");
+  }
+  return joined;
+}
 
 // ─── Session loading ─────────────────────────────────────────────────────────
 
@@ -18,7 +46,7 @@ function getLatestSession(projectDir) {
   const files = fs.readdirSync(SESSION_DIR)
     .filter(f => f.endsWith(".json"))
     .map(f => {
-      const filepath = path.join(SESSION_DIR, f);
+      const filepath = safeJoin(SESSION_DIR, f);
       const stat = fs.statSync(filepath);
       return { filepath, mtime: stat.mtimeMs };
     })
@@ -96,7 +124,7 @@ function formatLivingDocs(projectDir) {
   const parts = [];
 
   // ARCHITECTURE.md — always check
-  const archPath = path.join(projectDir, "ARCHITECTURE.md");
+  const archPath = safeJoin(projectDir, "ARCHITECTURE.md");
   if (fs.existsSync(archPath)) {
     try {
       const content = fs.readFileSync(archPath, "utf-8");
@@ -108,7 +136,7 @@ function formatLivingDocs(projectDir) {
   }
 
   // DESIGN.md — only if it exists
-  const designPath = path.join(projectDir, "DESIGN.md");
+  const designPath = safeJoin(projectDir, "DESIGN.md");
   if (fs.existsSync(designPath)) {
     try {
       const content = fs.readFileSync(designPath, "utf-8");
@@ -124,13 +152,83 @@ function formatLivingDocs(projectDir) {
 
 function checkProjectHealth(projectDir) {
   const missing = [];
-  if (!fs.existsSync(path.join(projectDir, "CLAUDE.md"))) {
+  if (!fs.existsSync(safeJoin(projectDir, "CLAUDE.md"))) {
     missing.push("CLAUDE.md");
   }
   if (missing.length > 0) {
     return `[Setup] Missing: ${missing.join(", ")} — consider creating one for this project.`;
   }
   return null;
+}
+
+// ─── Planning session detection ─────────────────────────────────────────────
+
+function formatPlanningContext(projectDir) {
+  const planningDir = safeJoin(projectDir, ".planning");
+  if (!fs.existsSync(planningDir)) return null;
+
+  try {
+    // Read roadmap to find active phase
+    const roadmapPath = safeJoin(planningDir, "roadmap.md");
+    if (!fs.existsSync(roadmapPath)) {
+      return "[Planning] Active .planning/ directory detected (initializing)";
+    }
+
+    const roadmapContent = fs.readFileSync(roadmapPath, "utf-8");
+    const phases = [];
+    for (const line of roadmapContent.split("\n")) {
+      const match = line.match(/^\|\s*(\d+)\s*\|\s*(\S+)\s*\|\s*(.*?)\s*\|\s*$/);
+      if (match) {
+        phases.push({
+          phase: parseInt(match[1], 10),
+          status: match[2],
+          description: match[3].trim(),
+        });
+      }
+    }
+
+    if (phases.length === 0) {
+      return "[Planning] Active .planning/ directory detected (no phases yet)";
+    }
+
+    const completed = phases.filter(p => p.status === "completed").length;
+    const active = phases.find(p => p.status !== "completed" && p.status !== "skipped");
+
+    if (!active) {
+      return `[Planning] All ${phases.length} phases completed`;
+    }
+
+    // Read progress.md from the active phase — validate phase number
+    const phaseNum = Number(active.phase);
+    if (!Number.isInteger(phaseNum) || phaseNum < 1) {
+      return "[Planning] Active .planning/ directory detected (invalid phase number)";
+    }
+    const phasesDir = safeJoin(planningDir, "phases");
+    const phaseDir = safeJoin(phasesDir, `phase-${phaseNum}`);
+    const progressPath = safeJoin(phaseDir, "progress.md");
+    let progressSummary = "";
+    if (fs.existsSync(progressPath)) {
+      const progressContent = fs.readFileSync(progressPath, "utf-8");
+      const entries = [];
+      for (const line of progressContent.split("\n")) {
+        const match = line.match(/^\|\s*(\d+)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*$/);
+        if (match) {
+          entries.push({ wave: parseInt(match[1], 10), status: match[3].trim() });
+        }
+      }
+      if (entries.length > 0) {
+        const done = entries.filter(e => e.status === "completed").length;
+        const currentWave = Math.max(
+          ...entries.filter(e => e.status !== "completed").map(e => e.wave).concat([0])
+        );
+        progressSummary = `, Wave ${currentWave}, ${done}/${entries.length} tasks complete`;
+      }
+    }
+
+    return `[Planning] Active planning session detected — Phase ${phaseNum} (${active.description})${progressSummary} [${completed}/${phases.length} phases done]`;
+  } catch {
+    return "[Planning] Active .planning/ directory detected (could not read state)";
+  }
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -152,6 +250,10 @@ function main() {
     // Living docs
     const docsContext = formatLivingDocs(projectDir);
     if (docsContext) outputParts.push(docsContext);
+
+    // Planning session awareness
+    const planningContext = formatPlanningContext(projectDir);
+    if (planningContext) outputParts.push(planningContext);
 
     console.log(outputParts.join("\n---\n"));
   } catch (err) {
