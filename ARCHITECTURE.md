@@ -45,7 +45,7 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 | `hooks/improvement-logger.js` | Stop hook (async) — appends session improvement observations to ~/.claude/improvement-log.jsonl |
 | `hooks/statusline-command.js` | Status line renderer — shows user, host, git branch, context usage, agents, session cost. Also writes context metrics to ~/.claude/context-metrics.json for the context monitor |
 | `hooks/context-monitor.js` | PostToolUse hook — reads context metrics and injects advisory warnings at 35%/25% remaining thresholds. Tracks state in ~/.claude/context-monitor-state.json |
-| `skills/supermind/SKILL.md` | Parent namespace listing /supermind-init and /supermind-living-docs |
+| `skills/supermind/SKILL.md` | Complexity router — auto-detects task scope and routes to /quick or /project mode. Analyzes quick signals (fix, rename, single-file) vs project signals (build, implement, multi-file). Announces decision with escape hatch. Handles explicit overrides, .planning/ session resume, and non-task prompts |
 | `skills/supermind-init/SKILL.md` | Project onboarding: CLAUDE.md merge, ARCHITECTURE.md + DESIGN.md generation, health checks |
 | `skills/supermind-init/architecture-template.md` | Skeleton template for ARCHITECTURE.md |
 | `skills/supermind-init/design-template.md` | Skeleton template for DESIGN.md |
