@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.8.0] - 2026-03-31
+
+### Added
+- **TDD skill** (`skills/tdd/SKILL.md`): strict RED-GREEN-REFACTOR test-driven development methodology — injected into `write-feature` and `write-test` executors via `SKILL_MAP`. Enforces "no production code without a failing test first" iron law. Includes step-zero test framework detection (Node.js, Python, Rust, Go), single-test loop discipline, anti-patterns table, bug fix flow, and verification checklist. Forked from obra/superpowers (MIT).
+- Skill count: 6 directories (was 5)
+
 ## [3.7.0] - 2026-03-31
 
 ### Added
