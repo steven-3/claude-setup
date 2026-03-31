@@ -3,7 +3,13 @@
 ## [3.16.0] - 2026-03-31
 
 ### Changed
-- **Supermind complexity router** (`skills/supermind/SKILL.md`): replaced the static parent namespace skill with a complexity router — the single `/supermind` entry point that auto-detects task scope and routes to `/quick` or `/project` mode. Analyzes user prompts against quick signals (fix, rename, typo, single-file scope, unambiguous) and project signals (build, implement, create, multi-file scope, ambiguous). Announces routing decision with escape hatch for user override. Supports all explicit overrides (`quick: <task>`, `/quick`, `/project`, all composable flags). Handles edge cases: non-task prompts (greetings, questions) skip routing; active `.planning/` sessions resume Project Mode; ambiguous tasks default to quick. Preserves `/supermind-init` and `/supermind-living-docs` as sub-commands. Sub-project 4.3 of Supermind v4 Unified Engine design.
+- **Supermind complexity router** (`skills/supermind/SKILL.md`): replaced the static parent namespace skill with a complexity router — the `/supermind` entry point that auto-detects task scope and routes to `/quick` or `/project` mode
+  - Analyzes user prompts against quick signals (fix, rename, typo, single-file scope, unambiguous) and project signals (build, implement, create, multi-file scope, ambiguous)
+  - Announces routing decision with escape hatch; proceeds immediately (user can override at any time)
+  - Supports all explicit overrides (`quick: <task>`, `/quick`, `/project`) and composable flags from both modes
+  - Edge cases: non-task prompts skip routing; active `.planning/` sessions resume Project Mode; ambiguous tasks default to quick
+  - Preserves `/supermind-init` and `/supermind-living-docs` as sub-commands
+  - Sub-project 4.3 of Supermind v4 Unified Engine design
 
 ## [3.15.0] - 2026-03-31
 

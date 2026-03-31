@@ -1,6 +1,6 @@
 ---
 name: supermind
-description: Complexity router — auto-detects task scope and routes to /quick or /project mode
+description: "Complexity router — auto-detects task scope and routes to /quick or /project mode"
 ---
 
 # Supermind — Complexity Router
@@ -17,7 +17,7 @@ This skill activates at the start of every task. It decides how much ceremony th
 
 ### Quick Signals (route to `/quick`)
 
-- **Keywords:** "fix", "rename", "typo", "update config", "add test for", "change X to Y", "remove", "delete", "bump", "move"
+- **Keywords:** "fix", "rename", "typo", "update config", "add test for", "add", "change X to Y", "remove", "delete", "bump", "move"
 - **Scope:** single file mentioned, specific function/variable named
 - **Clarity:** the request is unambiguous — you know exactly what to do
 - **Size:** trivially small change
@@ -36,8 +36,7 @@ This skill activates at the start of every task. It decides how much ceremony th
 3. Announce it with an escape hatch:
    - **Quick:** *"This looks like a quick task — running in quick mode. Say `/project` if you want the full lifecycle."*
    - **Project:** *"This looks like a multi-step project — running in project mode. Say `/quick` if this is simpler than I think."*
-4. Brief pause (one message) for the user to override, then proceed
-5. Invoke the chosen skill via the Skill tool — `/quick` or `/project`
+4. Invoke the chosen skill immediately via the Skill tool — `/quick` or `/project`. The user can override at any time.
 
 ## Explicit Overrides (always respected)
 
@@ -64,5 +63,5 @@ All composable flags from Quick and Project modes pass through unchanged.
 
 ## Available Sub-Commands
 
-- `/supermind-init` — Initialize a project: CLAUDE.md setup, ARCHITECTURE.md/DESIGN.md generation, health checks
+- `/supermind-init` — Initialize a project: CLAUDE.md setup, ARCHITECTURE.md/DESIGN.md generation, health checks, and optional skill/MCP discovery
 - `/supermind-living-docs` — Manually sync ARCHITECTURE.md and DESIGN.md with the current codebase

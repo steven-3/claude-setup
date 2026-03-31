@@ -12,7 +12,7 @@ Supermind is an npm package (`supermind-claude`) providing complete Claude Code 
 - `templates/` — CLAUDE.md project template copied to `~/.claude/templates/`
 
 ## Skill System
-- **`/supermind`** is the complexity router — auto-detects task scope and routes to `/quick` or `/project` mode. Announces its decision with an escape hatch. Supports all composable flags from both modes. This is the single entry point.
+- **`/supermind`** is the complexity router — auto-detects task scope and routes to `/quick` or `/project` mode. Announces its decision with an escape hatch. Supports all composable flags from both modes. This is the default entry point; `/quick` and `/project` can still be invoked directly.
 - **`/project`** activates Project Mode — full six-phase lifecycle (discuss, research, plan, execute waves, verify, ship). Supports `--skip-discuss`, `--skip-research`, `--assumptions`, `--max-parallel N` flags.
 - **`/quick`** or `quick:` prefix activates Quick Mode — single-executor path for small tasks (bug fixes, renames, config changes, tests). Supports `--with-research` and `--with-discuss` flags.
 - **`/supermind-init`** onboards a project: creates CLAUDE.md, generates ARCHITECTURE.md and DESIGN.md, runs health checks
