@@ -37,9 +37,9 @@ const SKILLS_DIR_NAME = 'skills';
 
 /** Maps task types to the methodology skills injected into executor prompts. */
 const SKILL_MAP = {
-  'write-feature': ['tdd', 'verification-before-completion', 'anti-rationalization'],
-  'fix-bug': ['systematic-debugging', 'verification-before-completion', 'anti-rationalization'],
-  'refactor': ['verification-before-completion', 'anti-rationalization'],
+  'write-feature': ['tdd', 'verification-before-completion', 'anti-rationalization', 'using-git-worktrees'],
+  'fix-bug': ['systematic-debugging', 'verification-before-completion', 'anti-rationalization', 'using-git-worktrees'],
+  'refactor': ['verification-before-completion', 'anti-rationalization', 'using-git-worktrees'],
   'write-test': ['tdd', 'anti-rationalization'],
   'research': [],
 };

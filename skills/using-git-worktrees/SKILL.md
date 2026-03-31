@@ -1,3 +1,4 @@
+<!-- Forked from obra/superpowers (MIT license) by Jesse Vincent and Prime Radiant. Adapted for Supermind executor injection. -->
 ---
 name: using-git-worktrees
 description: Automated worktree creation with safety checks — used by executors for isolated development
@@ -6,8 +7,6 @@ forked_from: obra/superpowers (MIT)
 ---
 
 # Using Git Worktrees
-
-Forked from [obra/superpowers](https://github.com/obra/superpowers) (MIT license) by Jesse Vincent and Prime Radiant. Adapted for Supermind executor injection.
 
 ## When to Use a Worktree
 
