@@ -35,6 +35,8 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 | `cli/lib/mcp.js` | MCP server setup: setupMcp(), promptApiKeys(), setupDocker(), setupDirect() |
 | `cli/lib/vendor-skills.js` | Skill fetching, hashing, lock file management (skills-lock.json) |
 | `cli/lib/planning.js` | Planning state management: .planning/ directory CRUD (roadmap, phases, progress, config, research, plans, tasks). Used by Project Mode orchestrator. Path-safe via safeJoin/safeFilenameSegment |
+| `cli/lib/executor.js` | Executor engine: buildTaskPacket (assembles self-contained task packets with spec/context/skills/contract), executeTask (builds Agent tool invocation data), buildWavePlan (topological sort into parallel waves), formatWaveProgress (Markdown progress table), getSkillContent (reads SKILL.md from ~/.claude/skills/ with project fallback). SKILL_MAP maps task types to methodology skills. Path-safe via safeJoin |
+| `cli/lib/agents.js` | Agent prompt templates for Project Mode: RESEARCHER_PROMPTS (4 templates: stack, feature, architecture, pitfall), PLANNER_PROMPT (atomic task plans with dependency graphs), PLAN_CHECKER_PROMPT (validates plans against goals), DEBUGGER_PROMPT (diagnoses executor failures), VERIFIER_PROMPT (checks results against original goal). All return prompt strings |
 | `hooks/bash-permissions.js` | PreToolUse hook — blocklist-based command classification; everything auto-approved except ~15 dangerous patterns. Logs blocked commands to ~/.claude/safety-log.jsonl |
 | `hooks/session-start.js` | SessionStart hook — loads previous session summary, injects ARCHITECTURE.md and DESIGN.md, detects active .planning/ sessions and reports phase/wave progress |
 | `hooks/session-end.js` | Stop hook — saves session context to ~/.claude/sessions/, tracks git branch and modified files |
@@ -121,7 +123,9 @@ supermind skill add <github-url> -> git clone -> hash -> copy -> skills-lock.jso
 | `cli/lib/templates.js` | fs, path, platform, logger | install, uninstall |
 | `cli/lib/mcp.js` | fs, path, readline, child_process, platform, logger | install |
 | `cli/lib/vendor-skills.js` | fs, path, os, crypto, child_process | skill command |
-| `cli/lib/planning.js` | fs, path | Project Mode orchestrator (future) |
+| `cli/lib/planning.js` | fs, path | Project Mode orchestrator, executor.js |
+| `cli/lib/executor.js` | fs, path, os | Project Mode orchestrator (builds task packets and wave plans) |
+| `cli/lib/agents.js` | (none — pure template functions) | Project Mode orchestrator (provides agent prompts) |
 | `hooks/bash-permissions.js` | fs, path, os | Runtime (PreToolUse) |
 | `hooks/session-start.js` | fs, path, os | Runtime (SessionStart) |
 | `hooks/session-end.js` | fs, path, os, child_process | Runtime (Stop) |

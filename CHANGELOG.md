@@ -1,5 +1,23 @@
 # Changelog
 
+## [3.6.0] - 2026-03-31
+
+### Added
+- **Executor engine** (`cli/lib/executor.js`): core runtime engine for Project Mode's fresh-context subagent execution
+  - `buildTaskPacket(task, options)` — assembles self-contained task packets with spec, context, injected methodology skills, and completion contract
+  - `executeTask(taskPacket, options)` — builds structured execution requests (prompt + metadata) for the orchestrator to pass to the Agent tool
+  - `buildWavePlan(tasks)` — topological sort of tasks by dependency graph into parallel execution waves; throws on circular dependencies
+  - `formatWaveProgress(wavePlan, results)` — renders Markdown progress table (wave/task/status/commit)
+  - `getSkillContent(skillName, projectRoot)` — reads SKILL.md from `~/.claude/skills/` with project-level fallback
+  - `SKILL_MAP` — maps task types to methodology skill sets (write-feature→TDD+verification+anti-rationalization, fix-bug→debugging+verification+anti-rationalization, etc.)
+  - All paths validated via `safeJoin` pattern; skill names validated with regex
+- **Agent prompt templates** (`cli/lib/agents.js`): specialized agent prompts for Project Mode orchestration
+  - `RESEARCHER_PROMPTS` — 4 researcher templates: stackResearcher (tech stack analysis), featureResearcher (pattern discovery), architectureResearcher (integration mapping), pitfallResearcher (risk identification)
+  - `PLANNER_PROMPT` — creates atomic task plans with dependency graphs and acceptance criteria
+  - `PLAN_CHECKER_PROMPT` — validates plans against goals (max 3 iterations)
+  - `DEBUGGER_PROMPT` — diagnoses task executor failures with root cause analysis
+  - `VERIFIER_PROMPT` — verifies execution results against original goal
+
 ## [3.5.0] - 2026-03-31
 
 ### Added
