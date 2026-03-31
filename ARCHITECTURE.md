@@ -57,6 +57,9 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 | `skills/brainstorming/SKILL.md` | Pre-implementation design exploration with interactive and assumptions modes — used by orchestrator Discuss phase. Forked from obra/superpowers (MIT), assumptions mode from gsd-build/get-shit-done (MIT) |
 | `skills/code-review/SKILL.md` | Structured code review methodology for the Verify phase — six criteria, three-tier issue classification, anti-performative-agreement. Forked from obra/superpowers (MIT) |
 | `skills/using-git-worktrees/SKILL.md` | Automated worktree creation with safety checks — used by executors for isolated development when task scope warrants it. Forked from obra/superpowers (MIT) |
+| `skills/writing-plans/SKILL.md` | Atomic implementation planning with dependency graphs — used by orchestrator Plan phase. Forked from obra/superpowers (MIT) |
+| `skills/executing-plans/SKILL.md` | Wave-based plan execution with progress tracking and failure handling — used by orchestrator Execute phase. Forked from obra/superpowers (MIT) |
+| `skills/finishing-branches/SKILL.md` | Ship phase handler — push branch, open PR, or keep/discard with worktree cleanup. Never merges to main/master. Forked from obra/superpowers (MIT) |
 | `agents/code-reviewer.md` | Agent definition for code reviewer subagent — review-only constraint, structured review output, input template for diff/plan/task_spec |
 | `templates/CLAUDE.md` | Project CLAUDE.md template with infrastructure and placeholder sections |
 | `airis/mcp-config.json` | Direct-mode MCP server configuration (npx/uvx launch commands) |

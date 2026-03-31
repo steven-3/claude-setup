@@ -65,8 +65,8 @@ EOF
 Keep the branch for continued work later.
 
 ```bash
-# Commit all changes
-git add -A && git commit -m "wip: <description>"
+# Stage and commit known files (avoid git add -A to prevent staging sensitive files)
+git add <known-files> && git commit -m "wip: <description>"
 ```
 
 - Report branch name and current status

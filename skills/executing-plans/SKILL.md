@@ -49,8 +49,8 @@ For each wave:
 **c. Record results in progress.md:**
 Update `.planning/phases/phase-N/progress.md` after each task completes.
 
-| Wave | Task | Status | Executor | Commit | Notes |
-|------|------|--------|----------|--------|-------|
+| Wave | Task | Status | Commit | Notes |
+|------|------|--------|--------|-------|
 
 Use `formatWaveProgress` from `executor.js` for the Markdown table.
 
