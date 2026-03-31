@@ -33,7 +33,6 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 | `cli/lib/skills.js` | Skill lifecycle: installSkills(), removeSkills(), removeLegacySkills() |
 | `cli/lib/templates.js` | Template lifecycle: installTemplates(), removeTemplates() |
 | `cli/lib/mcp.js` | MCP server setup: setupMcp(), promptApiKeys(), setupDocker(), setupDirect() |
-| `cli/lib/plugins.js` | Plugin defaults: getPluginDefaults() returns empty defaults (no third-party plugins) |
 | `cli/lib/vendor-skills.js` | Skill fetching, hashing, lock file management (skills-lock.json) |
 | `hooks/bash-permissions.js` | PreToolUse hook — blocklist-based command classification; everything auto-approved except ~15 dangerous patterns. Logs blocked commands to ~/.claude/safety-log.jsonl |
 | `hooks/session-start.js` | SessionStart hook — loads previous session summary, injects ARCHITECTURE.md and DESIGN.md |
@@ -113,7 +112,6 @@ supermind skill add <github-url> -> git clone -> hash -> copy -> skills-lock.jso
 | `cli/lib/skills.js` | fs, path, platform, logger | install, update, doctor, uninstall |
 | `cli/lib/templates.js` | fs, path, platform, logger | install, uninstall |
 | `cli/lib/mcp.js` | fs, path, readline, child_process, platform, logger | install |
-| `cli/lib/plugins.js` | (none) | install |
 | `cli/lib/vendor-skills.js` | fs, path, os, crypto, child_process | skill command |
 | `hooks/bash-permissions.js` | fs, path, os | Runtime (PreToolUse) |
 | `hooks/session-start.js` | fs, path, os | Runtime (SessionStart) |

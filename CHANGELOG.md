@@ -4,7 +4,7 @@
 
 ### Removed
 - Third-party plugin dependencies: superpowers, claude-md-management, frontend-design, ui-ux-pro-max, pr-review-toolkit, security-guidance, elements-of-style
-- Plugin defaults from `getPluginDefaults()` (now returns empty objects)
+- `cli/lib/plugins.js` module (dead code — nothing imports it)
 - Plugin merge step from `install` command (7 steps → 6)
 - Plugin health checks from `doctor` command
 - Plugin/marketplace merge and cleanup logic from `settings.js`
@@ -17,7 +17,7 @@
 ### Changed
 - Install command: 6 steps (was 7), no plugin step
 - Worktree workflow in CLAUDE.md: describes process directly instead of referencing Superpowers skills
-- ARCHITECTURE.md: plugins.js now documented as returning empty defaults
+- `supermind-init` skill: "Superpowers skills and Claude plugins" → "vendor skills and MCP servers"
 - README.md troubleshooting: removed "Plugins not active" entry
 
 ## [3.2.0] - 2026-03-30

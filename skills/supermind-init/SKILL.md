@@ -209,7 +209,7 @@ Different projects benefit from different tools. A database-heavy project might 
     c. **Research relevant tools** — dispatch **two parallel agents**:
 
        **Agent 1: Skills research**
-       - Search for Superpowers skills and Claude plugins relevant to the detected tech stack
+       - Search for vendor skills and MCP servers relevant to the detected tech stack
        - Consider the project's language, framework, testing approach, and deployment target
        - Check installed vs. available skills and identify gaps
 
