@@ -5,15 +5,13 @@ Supermind is an npm package (`supermind-claude`) providing complete Claude Code 
 
 **File organization:**
 - `cli/` — Installer commands (install, update, doctor, uninstall, skill)
-- `cli/lib/` — Shared utilities (paths, settings, hooks, skills, templates, mcp, plugins, logger, vendor-skills)
+- `cli/lib/` — Shared utilities (paths, settings, hooks, skills, templates, mcp, logger, vendor-skills)
 - `hooks/` — Runtime hooks copied to `~/.claude/hooks/` (7 hooks: bash-permissions, session-start, session-end, cost-tracker, statusline, pre-merge-checklist, improvement-logger)
 - `skills/` — SKILL.md files copied to `~/.claude/skills/` (3 dirs: supermind, supermind-init, supermind-living-docs)
 - `templates/` — CLAUDE.md project template copied to `~/.claude/templates/`
 
 ## Skill System
-- Superpowers skills are installed and auto-trigger per the using-superpowers meta-skill
 - When I prefix a request with "quick:", skip brainstorming and skill gates
-- Superpowers enforcement takes priority over all other methodology guidance **except** Git Permissions, Shell Permissions, and Worktree Workflow rules in this file — those are enforced by a PreToolUse hook and must not be second-guessed or re-prompted by skills
 - **`/supermind-init`** onboards a project: creates CLAUDE.md, generates ARCHITECTURE.md and DESIGN.md, runs health checks
 - **`/supermind-living-docs`** keeps ARCHITECTURE.md and DESIGN.md in sync with code changes (manual trigger)
 
@@ -34,11 +32,6 @@ Supermind is an npm package (`supermind-claude`) providing complete Claude Code 
 | statusline-command.js | statusLine | — | Two-line terminal display |
 | pre-merge-checklist.js | PostToolUse | Bash | Advisory pre-merge warnings |
 | improvement-logger.js | Stop | — | Session improvement tracking |
-
-### Auto-trigger: Skill Development Tools
-- When **writing or modifying** files in `skills/` or `hooks/` (SKILL.md content, hook scripts, frontmatter), invoke `working-with-claude-code` to reference the correct schemas and formats
-- When a skill is **functionally complete** (draft written or meaningfully revised), invoke `skill-creator` to run the eval/improvement loop — test prompts, benchmarking, and description optimization
-- These two don't replace each other: `working-with-claude-code` is for getting the implementation right, `skill-creator` is for verifying the skill actually works well
 
 ## Shell & Git Permissions
 
@@ -71,27 +64,25 @@ Compound commands with `&&`, `||`, `;` and pipes are fully supported — no need
 
 When implementing changes beyond a trivial edit, use a worktree. The bar is low — if it touches more than 2-3 files, involves logic changes, or follows an implementation plan, it goes through a worktree.
 
-Always use **subagent-driven development** for implementation.
-
 ### Setup
 
-Use the superpowers `/using-git-worktrees` skill for worktree creation. It handles:
-- Directory selection (`.worktrees/` preferred, already configured)
-- `.gitignore` safety verification (adds entry + commits if missing)
-- Dependency installation (auto-detects package.json, Cargo.toml, etc.)
-- Baseline test verification (reports failures before work begins)
+Create a worktree in `.worktrees/` from the current branch:
+- Verify `.worktrees/` is in `.gitignore` (add entry + commit if missing)
+- Create worktree: `git worktree add .worktrees/<name> -b <branch-name>`
+- Install dependencies if needed (auto-detect package.json, Cargo.toml, etc.)
+- Run baseline tests to identify pre-existing failures
 
-**Constraint:** The skill must branch from `HEAD` (the current local branch), never from a remote ref.
+**Constraint:** Always branch from `HEAD` (the current local branch), never from a remote ref.
 
 ### Process (runs fully autonomously — no approval needed at any step)
 
-1. **Create worktree** — invoke `/using-git-worktrees` as described above
-2. **Implement** all changes in the worktree directory using subagent-driven development
+1. **Create worktree** — follow the setup steps above
+2. **Implement** all changes in the worktree directory
 3. **Commit** all work in the worktree
-4. **Review** — run the superpowers `code-reviewer` agent against the changes
+4. **Review** — run code review against the changes
 5. **Fix everything** — address ALL issues found by the reviewer (critical, minor, style, naming — everything). Do not ask what to fix. Fix all of them. Then re-review until the reviewer passes clean.
 6. **Living docs check** — before merging, check if the changes affect anything documented in ARCHITECTURE.md (or DESIGN.md). For each changed file, verify that any claims the docs make about that file's behavior, constants, or patterns are still accurate. If updates are needed, make them and commit in the worktree branch.
-7. **Finish** — invoke `/finishing-a-development-branch` to merge back and clean up. The skill handles:
+7. **Finish** — merge back and clean up:
    - Merging the worktree branch into the originating branch
    - Removing the worktree directory
    - Deleting the temporary branch
@@ -157,9 +148,6 @@ Use these naturally when relevant — don't wait to be asked.
 - **Tavily**: Web search when WebSearch is insufficient
 - **shadcn**: UI component references
 - **Magic MCP**: `component_builder`, `component_inspiration`, `component_refiner`, `logo_search`
-
-## UI Changes
-- When making any UI/frontend changes, invoke the `/ui-ux-pro-max` skill for design guidance and quality checks.
 
 ## Living Documentation
 - The session-start hook automatically reads `ARCHITECTURE.md` and `DESIGN.md` (if it exists) at the beginning of every conversation.

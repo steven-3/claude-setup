@@ -4,7 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const { PATHS } = require('../lib/platform');
 const logger = require('../lib/logger');
-const { SUPERMIND_PLUGINS } = require('../lib/settings');
 const { getHookFiles } = require('../lib/hooks');
 const { getSkillDirs } = require('../lib/skills');
 const { version } = require('../../package.json');
@@ -74,15 +73,6 @@ module.exports = function doctor(flags) {
   for (const dir of expectedSkills) {
     const skillPath = path.join(PATHS.skillsDir, dir);
     run(`Skill: ${dir}`, fs.existsSync(skillPath) && fs.existsSync(path.join(skillPath, 'SKILL.md')));
-  }
-
-  // Plugins
-  if (SUPERMIND_PLUGINS.length === 0) {
-    logger.warn('Plugin list unavailable — plugin checks skipped');
-  } else {
-    for (const id of SUPERMIND_PLUGINS) {
-      run(`Plugin: ${id.split('@')[0]}`, settings.enabledPlugins?.[id] === true);
-    }
   }
 
   // Template

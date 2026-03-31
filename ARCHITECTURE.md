@@ -20,7 +20,7 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 | Path | Purpose |
 |------|---------|
 | `cli/index.js` | Entry point — parses argv, routes to commands, handles --help/--version |
-| `cli/commands/install.js` | Full setup: creates ~/.claude dirs, merges settings, installs hooks/skills/plugins/MCP/templates |
+| `cli/commands/install.js` | Full setup: creates ~/.claude dirs, merges settings, installs hooks/skills/MCP/templates |
 | `cli/commands/update.js` | Refreshes hooks, skills, templates; re-merges hook settings; updates version marker |
 | `cli/commands/doctor.js` | Health check: validates Node version, ~/.claude structure, settings, hooks, skills, Docker, vendor skills |
 | `cli/commands/uninstall.js` | Removes all Supermind components from ~/.claude, cleans settings |
@@ -33,7 +33,7 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 | `cli/lib/skills.js` | Skill lifecycle: installSkills(), removeSkills(), removeLegacySkills() |
 | `cli/lib/templates.js` | Template lifecycle: installTemplates(), removeTemplates() |
 | `cli/lib/mcp.js` | MCP server setup: setupMcp(), promptApiKeys(), setupDocker(), setupDirect() |
-| `cli/lib/plugins.js` | Plugin defaults: getPluginDefaults() returns enabledPlugins and marketplace config |
+| `cli/lib/plugins.js` | Plugin defaults: getPluginDefaults() returns empty defaults (no third-party plugins) |
 | `cli/lib/vendor-skills.js` | Skill fetching, hashing, lock file management (skills-lock.json) |
 | `hooks/bash-permissions.js` | PreToolUse hook — blocklist-based command classification; everything auto-approved except ~15 dangerous patterns. Logs blocked commands to ~/.claude/safety-log.jsonl |
 | `hooks/session-start.js` | SessionStart hook — loads previous session summary, injects ARCHITECTURE.md and DESIGN.md |
@@ -65,7 +65,6 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 │    ├─ hooks.js → copy hooks/*.js → ~/.claude/hooks/              │
 │    ├─ skills.js → copy skills/*/ → ~/.claude/skills/             │
 │    ├─ templates.js → copy templates/ → ~/.claude/templates/      │
-│    ├─ plugins.js → inject plugin defaults                        │
 │    └─ mcp.js → setup Docker/direct MCP servers                   │
 │                                                                   │
 ├─────────────────────────────────────────────────────────────────┤
@@ -101,7 +100,7 @@ supermind skill add <github-url> -> git clone -> hash -> copy -> skills-lock.jso
 | File | Depends On | Used By |
 |------|-----------|---------|
 | `cli/index.js` | package.json | Entry point (bin) |
-| `cli/commands/install.js` | platform, logger, settings, hooks, skills, plugins, mcp, templates | index.js |
+| `cli/commands/install.js` | platform, logger, settings, hooks, skills, mcp, templates | index.js |
 | `cli/commands/update.js` | platform, logger, settings, hooks, skills, templates, package.json | index.js |
 | `cli/commands/doctor.js` | platform, logger, settings, hooks, skills, package.json | index.js |
 | `cli/commands/uninstall.js` | platform, logger, settings, hooks, skills, templates, readline | index.js |
@@ -109,12 +108,12 @@ supermind skill add <github-url> -> git clone -> hash -> copy -> skills-lock.jso
 | `cli/commands/skill.js` | logger, vendor-skills | index.js |
 | `cli/lib/platform.js` | fs, path, os | All commands, all lib modules |
 | `cli/lib/logger.js` | package.json | All commands |
-| `cli/lib/settings.js` | fs, platform, logger, plugins | install, update, doctor, uninstall |
+| `cli/lib/settings.js` | fs, platform, logger | install, update, doctor, uninstall |
 | `cli/lib/hooks.js` | fs, path, platform, logger | install, update, doctor, uninstall |
 | `cli/lib/skills.js` | fs, path, platform, logger | install, update, doctor, uninstall |
 | `cli/lib/templates.js` | fs, path, platform, logger | install, uninstall |
 | `cli/lib/mcp.js` | fs, path, readline, child_process, platform, logger | install |
-| `cli/lib/plugins.js` | (none) | install, settings (soft — fallback on load failure) |
+| `cli/lib/plugins.js` | (none) | install |
 | `cli/lib/vendor-skills.js` | fs, path, os, crypto, child_process | skill command |
 | `hooks/bash-permissions.js` | fs, path, os | Runtime (PreToolUse) |
 | `hooks/session-start.js` | fs, path, os | Runtime (SessionStart) |

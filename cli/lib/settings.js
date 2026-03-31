@@ -11,25 +11,6 @@ const SUPERMIND_HOOKS = [
   'pre-merge-checklist.js', 'improvement-logger.js',
 ];
 
-// Derived from plugins.js — single source of truth for plugin and marketplace IDs.
-// Wrapped in try-catch so a plugins.js error doesn't crash doctor/uninstall.
-function loadPluginIds() {
-  try {
-    const { getPluginDefaults } = require('./plugins');
-    const defaults = getPluginDefaults();
-    return {
-      plugins: Object.keys(defaults.enabledPlugins),
-      marketplaces: Object.keys(defaults.extraKnownMarketplaces),
-    };
-  } catch (err) {
-    logger.warn(`Could not load plugins.js — plugin checks/cleanup will be skipped (${err.message})`);
-    return { plugins: [], marketplaces: [] };
-  }
-}
-
-const { plugins: SUPERMIND_PLUGINS, marketplaces: SUPERMIND_MARKETPLACES } = loadPluginIds();
-// SUPERMIND_MARKETPLACES is used only within this module (for uninstall cleanup) — intentionally not exported
-
 function readSettings() {
   try {
     return JSON.parse(fs.readFileSync(PATHS.settings, 'utf-8'));
@@ -121,9 +102,6 @@ function mergeSettings(existing, defaults) {
 
   // Objects: recursive merge
   if (defaults.permissions) result.permissions = mergeObjects(result.permissions || {}, defaults.permissions);
-  if (defaults.enabledPlugins) result.enabledPlugins = mergeObjects(result.enabledPlugins || {}, defaults.enabledPlugins);
-  if (defaults.extraKnownMarketplaces) result.extraKnownMarketplaces = mergeObjects(result.extraKnownMarketplaces || {}, defaults.extraKnownMarketplaces);
-
   // Hooks: special merge
   if (defaults.hooks) result.hooks = mergeHookEvents(result.hooks || {}, defaults.hooks);
 
@@ -136,23 +114,6 @@ function removeSupermindEntries(settings) {
 
   // Remove statusLine
   delete result.statusLine;
-
-  // Remove Supermind plugins and marketplace entries
-  if (SUPERMIND_PLUGINS.length === 0) {
-    logger.warn('Plugin/marketplace list unavailable — these entries were NOT removed from settings. ' +
-      'You may need to manually edit ~/.claude/settings.json');
-  } else {
-    if (result.enabledPlugins) {
-      for (const id of SUPERMIND_PLUGINS) {
-        delete result.enabledPlugins[id];
-      }
-    }
-    if (result.extraKnownMarketplaces) {
-      for (const id of SUPERMIND_MARKETPLACES) {
-        delete result.extraKnownMarketplaces[id];
-      }
-    }
-  }
 
   // Remove Supermind hooks from each event
   if (result.hooks) {
@@ -179,5 +140,5 @@ function removeSupermindEntries(settings) {
 module.exports = {
   readSettings, writeSettings, backupSettings,
   mergeSettings, removeSupermindEntries,
-  SUPERMIND_HOOKS, SUPERMIND_PLUGINS,
+  SUPERMIND_HOOKS,
 };

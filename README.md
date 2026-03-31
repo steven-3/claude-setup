@@ -17,7 +17,6 @@ Or run without installing: `npx supermind-claude`
 |-----------|----------|---------|
 | Hooks | ~/.claude/hooks/ | Session persistence, bash permissions, status line, cost tracking |
 | Skills | ~/.claude/skills/ | /supermind-init, /supermind-living-docs |
-| Plugins | settings.json | Superpowers, frontend-design, claude-md-management, ui-ux-pro-max |
 | Settings | settings.json | Thinking mode, effort level, hook registration |
 | Templates | ~/.claude/templates/ | CLAUDE.md project template |
 
@@ -73,6 +72,5 @@ Windows, macOS, and Linux. Requires Node.js >= 18.
 ## Troubleshooting
 
 Run `supermind-claude doctor` to check installation health. Common issues:
-- **Plugins not active**: Restart Claude Code after install
 - **Status line not showing**: Ensure Node.js is in PATH
 - **Hooks not firing**: Run `supermind-claude update` to re-register
