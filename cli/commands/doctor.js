@@ -12,7 +12,6 @@ const { version } = require('../../package.json');
 
 const GREEN = '\x1b[32m';
 const RED = '\x1b[31m';
-const DIM = '\x1b[2m';
 const BOLD = '\x1b[1m';
 const R = '\x1b[0m';
 
@@ -58,6 +57,35 @@ function checkSettings() {
     return ok('settings.json valid');
   } catch (err) {
     return fail('settings.json invalid', err.message);
+  }
+}
+
+// Template
+function checkTemplate() {
+  return fs.existsSync(path.join(PATHS.templatesDir, 'CLAUDE.md'))
+    ? ok('CLAUDE.md template')
+    : fail('CLAUDE.md template missing');
+}
+
+// Sessions directory writable
+function checkSessions() {
+  const testFile = path.join(PATHS.sessionsDir, '.doctor-test');
+  try {
+    fs.writeFileSync(testFile, 'test');
+  } catch {
+    return fail('Sessions directory not writable');
+  }
+  try { fs.unlinkSync(testFile); } catch { /* cleanup non-critical */ }
+  return ok('Sessions directory writable');
+}
+
+// Improvement log writable
+function checkImprovementLog() {
+  try {
+    fs.appendFileSync(PATHS.improvementLog, '', { flag: 'a' });
+    return ok('Improvement log writable');
+  } catch {
+    return fail('Improvement log not writable');
   }
 }
 
@@ -202,6 +230,9 @@ function checkPlugin() {
 
     // Verify the cached plugin.json is valid
     const installPath = entry[0].installPath;
+    if (!installPath) {
+      return fail('plugin registry entry missing installPath');
+    }
     const manifestPath = path.join(installPath, '.claude-plugin', 'plugin.json');
     if (fs.existsSync(manifestPath)) {
       JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
@@ -240,13 +271,6 @@ function checkSafety() {
 
   if (!blocklist) {
     return fail('bash-permissions.js missing or not using blocklist model');
-  }
-
-  // Ensure approved commands file exists
-  if (!fs.existsSync(PATHS.approvedCommands)) {
-    try {
-      fs.writeFileSync(PATHS.approvedCommands, '{}\n');
-    } catch { /* non-critical */ }
   }
 
   return ok('blocklist model');
@@ -288,11 +312,11 @@ function checkPlanning() {
     allOk = false;
   }
 
-  // Report active phase if detectable
+  // Report active phase if detectable (reuse roadmap read from above)
   if (fs.existsSync(roadmapPath)) {
     try {
-      const roadmap = fs.readFileSync(roadmapPath, 'utf-8');
-      const activeMatch = roadmap.match(/\|\s*(\d+)\s*\|[^|]*\|\s*(?:in.progress|active|executing)/i);
+      const content = fs.readFileSync(roadmapPath, 'utf-8');
+      const activeMatch = content.match(/\|\s*(\d+)\s*\|[^|]*\|\s*(?:in.progress|active|executing)/i);
       if (activeMatch) {
         logger.info(`Active phase: ${activeMatch[1]}`);
       }
@@ -349,7 +373,7 @@ function checkDocker() {
 // Main
 // ---------------------------------------------------------------------------
 
-module.exports = function doctor() {
+module.exports = function doctor(flags) {
   logger.banner();
   console.log('  Running health checks...');
 
@@ -360,6 +384,9 @@ module.exports = function doctor() {
   run(checkNode);
   run(checkClaudeHome);
   run(checkSettings);
+  run(checkTemplate);
+  run(checkSessions);
+  run(checkImprovementLog);
 
   // Components
   run(checkSkills);

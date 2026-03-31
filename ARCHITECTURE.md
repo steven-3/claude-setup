@@ -68,7 +68,7 @@ Supermind is a unified skill engine for Claude Code — combining execution infr
 | `cli/index.js` | 81 | Entry point — parses argv, routes to commands, handles --help/--version |
 | `cli/commands/install.js` | 85 | Full setup: creates ~/.claude dirs, merges settings, installs hooks/skills/agents/MCP/templates, registers plugin |
 | `cli/commands/update.js` | 75 | Refreshes hooks, skills, agents, templates, plugin manifest; re-merges hook settings |
-| `cli/commands/doctor.js` | 393 | Health check: sectioned output validating Node, ~/.claude, settings, skills (15/15), agents (1/1), hooks (8/8 + registration), context monitor, plugin manifest, executor engine, safety layer (blocklist), .planning/ integrity, version, vendor skills, Docker |
+| `cli/commands/doctor.js` | 420 | Health check: sectioned output validating Node, ~/.claude, settings, skills (15/15), agents (1/1), hooks (8/8 + registration), context monitor, plugin manifest, executor engine, safety layer (blocklist), .planning/ integrity, version, vendor skills, Docker |
 | `cli/commands/uninstall.js` | 105 | Removes all Supermind components from ~/.claude, cleans settings, deregisters plugin |
 | `cli/commands/approve.js` | 72 | Manages ~/.claude/supermind-approved.json (add/list/remove auto-approved command patterns) |
 | `cli/commands/skill.js` | 164 | Vendor skill management CLI (add/update/list/remove) |
