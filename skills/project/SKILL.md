@@ -23,6 +23,9 @@ Discuss → Research (4 parallel agents) → Plan → Execute (waves) → Verify
 
 - Bug fixes, renames, config changes, adding tests → use `/quick`
 
+If in doubt, announce your routing decision and offer the escape hatch:
+*"This looks like a full-lifecycle task — running in project mode. Say `/quick` if you just need a quick fix."*
+
 ## Orchestrator Rules
 
 - **The orchestrator NEVER writes code** — it only coordinates subagents
