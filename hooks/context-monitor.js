@@ -12,9 +12,9 @@ const WARN_THRESHOLD = 35;
 const CRITICAL_THRESHOLD = 25;
 const SPAM_INTERVAL = 5; // below critical, warn every Nth tool call
 
-let input = "";
+// Drain stdin (PostToolUse sends tool data, but we read metrics from file instead)
 process.stdin.setEncoding("utf8");
-process.stdin.on("data", (chunk) => (input += chunk));
+process.stdin.resume();
 process.stdin.on("end", () => {
   try {
     // Read metrics written by statusline hook
@@ -71,7 +71,9 @@ process.stdin.on("end", () => {
 function output(message) {
   if (message) {
     process.stdout.write(JSON.stringify({
-      hookSpecificOutput: { additionalContext: message },
+      hookSpecificOutput: { hookEventName: "PostToolUse", additionalContext: message },
     }));
+  } else {
+    process.stdout.write("{}");
   }
 }
