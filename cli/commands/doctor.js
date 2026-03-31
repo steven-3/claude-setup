@@ -10,10 +10,7 @@ const { PLUGIN_KEY } = require('../lib/plugin');
 const { readSettings } = require('../lib/settings');
 const { version } = require('../../package.json');
 
-const GREEN = '\x1b[32m';
-const RED = '\x1b[31m';
-const BOLD = '\x1b[1m';
-const R = '\x1b[0m';
+const { GREEN, RED, BOLD, R } = require('../lib/logger');
 
 // ---------------------------------------------------------------------------
 // Helpers

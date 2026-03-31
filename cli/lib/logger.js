@@ -35,4 +35,4 @@ function info(message) {
   console.log(`  ${DIM}${message}${R}`);
 }
 
-module.exports = { banner, step, success, warn, error, info };
+module.exports = { banner, step, success, warn, error, info, GREEN, YELLOW, RED, DIM, BOLD, CYAN, R };
