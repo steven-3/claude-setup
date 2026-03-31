@@ -10,7 +10,6 @@ const COMMANDS = {
   uninstall: () => require('./commands/uninstall'),
   approve: () => require('./commands/approve'),
   skill: () => require('./commands/skill'),
-  openspec: () => require('./commands/openspec'),
 };
 
 function parseArgs(argv) {
@@ -54,7 +53,6 @@ function showHelp() {
     uninstall   Remove all Supermind components
     approve     Manage auto-approved commands
     skill       Manage vendor skills (add/update/list/remove)
-    openspec    Manage OpenSpec CLI (install/doctor)
 
   Options:
     --non-interactive   Skip all prompts, use defaults

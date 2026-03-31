@@ -26,7 +26,6 @@ Section-level merging preserves your project-specific customizations while keepi
 - Shell & Git Permissions
 - Subagent Strategy
 - Development Lifecycle
-- OpenSpec Workflow
 - Vendor Skills
 - MCP Servers
 - UI Changes
@@ -183,26 +182,6 @@ ARCHITECTURE.md uses tables-over-prose because it saves tokens — the AI reads 
 14. **Commit** generated or migrated docs:
     - New project: `git commit -m "Initialize project (CLAUDE.md, ARCHITECTURE.md[, DESIGN.md])"`
     - Migrated: `git commit -m "Migrate living documentation to AI-optimized format"`
-
----
-
-## Phase 2.5: OpenSpec Scaffolding
-
-Set up OpenSpec for structured change management in this project.
-
-### Steps
-
-14a. **Check OpenSpec CLI availability**:
-    - Run `openspec --version` to detect if installed
-    - If installed, report version
-
-14b. **Initialize OpenSpec** (only if `openspec/` directory does not exist):
-    - If CLI available: run `openspec init` in the project root
-    - If CLI not available: create `openspec/changes/` directory manually using mkdir
-    - Add `openspec/changes/archive/` to `.gitignore` if not already present
-    - Tell the user: "OpenSpec initialized. Use `/openspec-propose` to create your first change."
-
-14c. **If OpenSpec directory already exists**: tell the user it is already set up and skip.
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides complete Claude Code setup — hooks, skills, status line, MCP servers, and living documentation. It installs into `~/.claude/` via a copy-on-install pattern, merging configuration non-destructively into `settings.json` to preserve user customizations. v3.0 adds vendor skill management (install third-party skills from GitHub with hash-locked integrity) and OpenSpec integration (a structured spec-driven workflow for proposing, implementing, and archiving changes).
+Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides complete Claude Code setup — hooks, skills, status line, MCP servers, and living documentation. It installs into `~/.claude/` via a copy-on-install pattern, merging configuration non-destructively into `settings.json` to preserve user customizations. v3.0 adds vendor skill management (install third-party skills from GitHub with hash-locked integrity).
 
 ## Tech Stack
 
@@ -14,7 +14,6 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 | Package | npm (supermind-claude) | Distribution and global install |
 | MCP (optional) | context7, playwright, serena, tavily, shadcn, chrome-devtools | Code nav, browser testing, search, UI components |
 | MCP Gateway (optional) | AIRIS (Docker) | Cold-start MCP server management |
-| OpenSpec CLI (optional) | openspec (npm) | Spec-driven change workflow (propose/explore/apply/archive) |
 
 ## File Index
 
@@ -23,11 +22,10 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 | `cli/index.js` | Entry point — parses argv, routes to commands, handles --help/--version |
 | `cli/commands/install.js` | Full setup: creates ~/.claude dirs, merges settings, installs hooks/skills/plugins/MCP/templates |
 | `cli/commands/update.js` | Refreshes hooks, skills, templates; re-merges hook settings; updates version marker |
-| `cli/commands/doctor.js` | Health check: validates Node version, ~/.claude structure, settings, hooks, skills, Docker |
+| `cli/commands/doctor.js` | Health check: validates Node version, ~/.claude structure, settings, hooks, skills, Docker, vendor skills |
 | `cli/commands/uninstall.js` | Removes all Supermind components from ~/.claude, cleans settings |
 | `cli/commands/approve.js` | Manages ~/.claude/supermind-approved.json (add/list/remove auto-approved command patterns) |
 | `cli/commands/skill.js` | Vendor skill management CLI (add/update/list/remove) |
-| `cli/commands/openspec.js` | OpenSpec CLI wrapper (install/doctor) |
 | `cli/lib/platform.js` | PATHS constant and utilities: ensureDir(), getPackageRoot() |
 | `cli/lib/logger.js` | Color-coded terminal output: banner(), step(), success(), warn(), error(), info() |
 | `cli/lib/settings.js` | Settings I/O: readSettings(), writeSettings(), backupSettings(), mergeSettings(), removeSupermindEntries() |
@@ -37,7 +35,6 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 | `cli/lib/mcp.js` | MCP server setup: setupMcp(), promptApiKeys(), setupDocker(), setupDirect() |
 | `cli/lib/plugins.js` | Plugin defaults: getPluginDefaults() returns enabledPlugins and marketplace config |
 | `cli/lib/vendor-skills.js` | Skill fetching, hashing, lock file management (skills-lock.json) |
-| `cli/lib/openspec.js` | OpenSpec CLI detection and installation |
 | `hooks/bash-permissions.js` | PreToolUse hook — blocklist-based command classification; everything auto-approved except ~15 dangerous patterns. Logs blocked commands to ~/.claude/safety-log.jsonl |
 | `hooks/session-start.js` | SessionStart hook — loads previous session summary, injects ARCHITECTURE.md and DESIGN.md |
 | `hooks/session-end.js` | Stop hook — saves session context to ~/.claude/sessions/, tracks git branch and modified files |
@@ -50,10 +47,6 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 | `skills/supermind-init/architecture-template.md` | Skeleton template for ARCHITECTURE.md |
 | `skills/supermind-init/design-template.md` | Skeleton template for DESIGN.md |
 | `skills/supermind-living-docs/SKILL.md` | Manual sync trigger for ARCHITECTURE.md and DESIGN.md |
-| `skills/openspec-propose/SKILL.md` | OpenSpec propose workflow — drafts a structured change spec |
-| `skills/openspec-explore/SKILL.md` | OpenSpec explore/thinking mode — deep analysis before proposing |
-| `skills/openspec-apply/SKILL.md` | OpenSpec task implementation — executes an approved spec |
-| `skills/openspec-archive/SKILL.md` | OpenSpec change archival — records completed changes for audit trail |
 | `templates/CLAUDE.md` | Project CLAUDE.md template with infrastructure and placeholder sections |
 | `airis/mcp-config.json` | Direct-mode MCP server configuration (npx/uvx launch commands) |
 | `.env.example` | Environment variable template (TAVILY_API_KEY, TWENTYFIRST_API_KEY) |
@@ -101,9 +94,6 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 
 Vendor Skill Flow:
 supermind skill add <github-url> -> git clone -> hash -> copy -> skills-lock.json
-
-OpenSpec Flow:
-/openspec-explore -> /openspec-propose -> /openspec-apply -> /openspec-archive
 ```
 
 ### File Dependencies
@@ -117,7 +107,6 @@ OpenSpec Flow:
 | `cli/commands/uninstall.js` | platform, logger, settings, hooks, skills, templates, readline | index.js |
 | `cli/commands/approve.js` | fs, path, platform, logger | index.js |
 | `cli/commands/skill.js` | logger, vendor-skills | index.js |
-| `cli/commands/openspec.js` | logger, openspec | index.js |
 | `cli/lib/platform.js` | fs, path, os | All commands, all lib modules |
 | `cli/lib/logger.js` | package.json | All commands |
 | `cli/lib/settings.js` | fs, platform, logger, plugins | install, update, doctor, uninstall |
@@ -127,7 +116,6 @@ OpenSpec Flow:
 | `cli/lib/mcp.js` | fs, path, readline, child_process, platform, logger | install |
 | `cli/lib/plugins.js` | (none) | install, settings (soft — fallback on load failure) |
 | `cli/lib/vendor-skills.js` | fs, path, os, crypto, child_process | skill command |
-| `cli/lib/openspec.js` | child_process, os | openspec command |
 | `hooks/bash-permissions.js` | fs, path, os | Runtime (PreToolUse) |
 | `hooks/session-start.js` | fs, path, os | Runtime (SessionStart) |
 | `hooks/session-end.js` | fs, path, os, child_process | Runtime (Stop) |
@@ -149,8 +137,6 @@ OpenSpec Flow:
 | `supermind-claude skill update` | [name] | `--all` | Update vendor skill(s) |
 | `supermind-claude skill list` | — | — | List installed vendor skills |
 | `supermind-claude skill remove` | name | — | Remove vendor skill |
-| `supermind-claude openspec install` | — | — | Install OpenSpec CLI |
-| `supermind-claude openspec doctor` | — | — | Check OpenSpec health |
 
 ### Hook Registration (in settings.json)
 

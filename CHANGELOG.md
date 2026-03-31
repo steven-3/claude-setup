@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.2.0] - 2026-03-30
+
+### Removed
+- OpenSpec integration: 4 skills (propose, explore, apply, archive), CLI command, and lib module
+- `supermind openspec install/doctor` CLI commands
+- OpenSpec CLI health checks from `supermind doctor`
+- OpenSpec references from CLAUDE.md template (workflow section, Phase 2/5 references)
+- OpenSpec references from ARCHITECTURE.md (tech stack, file index, data flow, API contracts, dependencies)
+
+### Changed
+- Skill count: 3 directories (was 7)
+- Template CLAUDE.md Phase 2: complex changes now use `/brainstorming` instead of OpenSpec
+- KNOWN_SKILLS fallback list reduced to 3 entries
+
 ## [3.1.0] - 2026-03-30
 
 ### Changed

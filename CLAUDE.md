@@ -4,27 +4,18 @@
 Supermind is an npm package (`supermind-claude`) providing complete Claude Code setup — hooks, skills, status line, MCP servers, and living documentation.
 
 **File organization:**
-- `cli/` — Installer commands (install, update, doctor, uninstall, skill, openspec)
-- `cli/lib/` — Shared utilities (paths, settings, hooks, skills, templates, mcp, plugins, logger, vendor-skills, openspec)
+- `cli/` — Installer commands (install, update, doctor, uninstall, skill)
+- `cli/lib/` — Shared utilities (paths, settings, hooks, skills, templates, mcp, plugins, logger, vendor-skills)
 - `hooks/` — Runtime hooks copied to `~/.claude/hooks/` (7 hooks: bash-permissions, session-start, session-end, cost-tracker, statusline, pre-merge-checklist, improvement-logger)
-- `skills/` — SKILL.md files copied to `~/.claude/skills/` (7 dirs: supermind, supermind-init, supermind-living-docs, openspec-propose, openspec-explore, openspec-apply, openspec-archive)
+- `skills/` — SKILL.md files copied to `~/.claude/skills/` (3 dirs: supermind, supermind-init, supermind-living-docs)
 - `templates/` — CLAUDE.md project template copied to `~/.claude/templates/`
 
 ## Skill System
 - Superpowers skills are installed and auto-trigger per the using-superpowers meta-skill
 - When I prefix a request with "quick:", skip brainstorming and skill gates
 - Superpowers enforcement takes priority over all other methodology guidance **except** Git Permissions, Shell Permissions, and Worktree Workflow rules in this file — those are enforced by a PreToolUse hook and must not be second-guessed or re-prompted by skills
-- **`/supermind-init`** onboards a project: creates CLAUDE.md, generates ARCHITECTURE.md and DESIGN.md, runs health checks, scaffolds `openspec/` directory
+- **`/supermind-init`** onboards a project: creates CLAUDE.md, generates ARCHITECTURE.md and DESIGN.md, runs health checks
 - **`/supermind-living-docs`** keeps ARCHITECTURE.md and DESIGN.md in sync with code changes (manual trigger)
-- **`/openspec-propose`**, **`/openspec-explore`**, **`/openspec-apply`**, **`/openspec-archive`** — OpenSpec workflow skills
-
-## OpenSpec Integration
-- OpenSpec CLI is detected/installed during `supermind install` (step 8)
-- 4 OpenSpec skills ship with supermind: propose, explore, apply, archive
-- Skills use CLI when available, fall back to manual directory/file creation
-- `/supermind-init` scaffolds `openspec/` directory in new projects
-- `supermind openspec install` — standalone CLI installer
-- `supermind openspec doctor` — check CLI health
 
 ## Vendor Skill System
 - `supermind skill add <github-url> [--global]` — install from GitHub repo
@@ -146,7 +137,6 @@ After the review passes clean, run the **pre-publish verification** automaticall
 1. Bump version in `package.json`
 2. Update `CHANGELOG.md`
 3. Commit
-3a. Archive any OpenSpec changes used during development: `/openspec-archive`
 4. After PR is squash-merged into `main`, automatically:
    - Create git tag: `git tag v<version> && git push origin v<version>`
    - Create GitHub release: `gh release create v<version>` with notes from CHANGELOG.md

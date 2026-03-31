@@ -109,22 +109,6 @@ module.exports = function doctor(flags) {
     logger.warn('Docker not available (optional \u2014 needed for AIRIS mode)');
   }
 
-  // OpenSpec CLI
-  try {
-    const openspecLib = require('../lib/openspec');
-    const status = openspecLib.detectCli();
-    if (status.installed) {
-      run('OpenSpec CLI installed', true);
-      const health = openspecLib.checkHealth();
-      run('OpenSpec CLI version compatible', health.compatible,
-        health.compatible ? undefined : `found v${status.version}, need >= v${openspecLib.OPENSPEC_MIN_VERSION}`);
-    } else {
-      logger.warn('OpenSpec CLI not installed (optional \u2014 install with: npm install -g openspec)');
-    }
-  } catch {
-    logger.warn('OpenSpec CLI check skipped');
-  }
-
   // Vendor skills
   try {
     const vendorSkills = require('../lib/vendor-skills');

@@ -53,42 +53,6 @@ function checkLivingDocs(projectDir, targetBranch) {
   return null;
 }
 
-// ─── Check 2: OpenSpec archive ────────────────────────────────────────────────
-
-function checkOpenSpecArchive(projectDir) {
-  const warnings = [];
-  try {
-    // projectDir is from process.env.PROJECT_DIR / process.cwd() — not user input. nosemgrep
-    const changesDir = path.join(projectDir, 'openspec', 'changes'); // nosemgrep
-    if (!fs.existsSync(changesDir)) return warnings;
-
-    const entries = fs.readdirSync(changesDir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-      if (entry.name === 'archive') continue;
-
-      // entry.name is from readdirSync on a validated base path — not user input. nosemgrep
-      const tasksFile = path.join(changesDir, entry.name, 'tasks.md'); // nosemgrep
-      if (!fs.existsSync(tasksFile)) continue;
-
-      try {
-        const content = fs.readFileSync(tasksFile, 'utf-8');
-        const done = (content.match(/- \[x\]/gi) || []).length;
-        const notDone = (content.match(/- \[ \]/g) || []).length;
-
-        if (done > 0 && notDone === 0) {
-          warnings.push(`Completed OpenSpec change '${entry.name}' not archived. Run /openspec-archive first.`);
-        }
-      } catch {
-        // Cannot read tasks.md — skip this change dir
-      }
-    }
-  } catch {
-    // openspec/changes not accessible — skip check
-  }
-  return warnings;
-}
-
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 function main() {
@@ -119,14 +83,6 @@ function main() {
       try {
         const livingDocsWarning = checkLivingDocs(projectDir, targetBranch);
         if (livingDocsWarning) warnings.push(livingDocsWarning);
-      } catch {
-        // skip
-      }
-
-      // Check 2: OpenSpec archive
-      try {
-        const openSpecWarnings = checkOpenSpecArchive(projectDir);
-        warnings.push(...openSpecWarnings);
       } catch {
         // skip
       }

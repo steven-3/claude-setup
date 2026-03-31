@@ -91,7 +91,7 @@ This entire lifecycle executes autonomously — no stopping to ask for permissio
 
 ### Phase 2 — Design & Plan
 - Read `ARCHITECTURE.md` and `DESIGN.md` to understand existing patterns, conventions, and constraints before proposing any approach
-- **Complex changes** — new subsystem, cross-cutting refactor, ambiguous requirements, or significant design tradeoffs: invoke `/openspec-explore` then `/openspec-propose` to produce a written spec before writing any code; do not start implementation until the spec is approved
+- **Complex changes** — new subsystem, cross-cutting refactor, ambiguous requirements, or significant design tradeoffs: invoke `/brainstorming` to explore the design space, then write a milestone-based implementation plan; do not start implementation until the plan is reviewed
 - **Simple changes** — clear, contained requirements with no meaningful design decisions open: invoke `/brainstorming` to quickly explore the approach, then write a milestone-based implementation plan
 - If the plan exceeds 8 tasks, decompose into milestones now — not during implementation
 
@@ -110,7 +110,6 @@ This entire lifecycle executes autonomously — no stopping to ask for permissio
 
 ### Phase 5 — Pre-merge
 - Compare `ARCHITECTURE.md` and `DESIGN.md` against every changed file; update any stale claims about behavior, constants, file layout, APIs, data models, or environment variables
-- Archive or delete any OpenSpec produced in Phase 2 (move to `openspec/changes/archive/` to preserve for reference, or delete if no longer relevant)
 - Bump the version following semver: patch for bug fixes, minor for new features, major for breaking changes to public interfaces
 - Update `CHANGELOG.md` with a concise summary of what changed and why
 - Commit all pre-merge updates (docs, version, changelog) in the worktree branch
@@ -133,28 +132,6 @@ When a pull request is ready for review, invoke `/pr-review-toolkit:review-pr` t
 6. Report to the user: what was found and fixed each round, how many cycles it took, and any suggestions intentionally left as-is
 
 No approval needed at any step. The loop runs autonomously and delivers one final summary.
-
-## OpenSpec Workflow
-
-Use OpenSpec to produce a written specification before implementation when:
-- The change introduces a new subsystem, service, or cross-cutting concern
-- Requirements are ambiguous, under-specified, or involve design tradeoffs with no obvious correct answer
-- The change affects public interfaces, APIs, or contracts consumed by other modules or services
-- Multiple valid approaches exist and the choice between them has long-term consequences
-- You are unsure of the right design and need to reason through options before writing code
-
-**Skills:**
-- `/openspec-explore` — Thinking mode: investigate, diagram, clarify. Never writes code.
-- `/openspec-propose` — Create a change with all artifacts (proposal.md, design.md, tasks.md)
-- `/openspec-apply` — Implement tasks from a change, marking complete as you go
-- `/openspec-archive` — Finalize completed change, sync specs, move to archive
-
-**When NOT to use OpenSpec:**
-- Bug fixes with a clear, identified root cause
-- Changes contained to a single file or module with no interface changes
-- UI copy edits, color or spacing tweaks, or minor styling adjustments
-- Tasks with fully specified requirements that leave no meaningful design decisions open
-- Anything that would take longer to spec than to implement
 
 ## Vendor Skills
 

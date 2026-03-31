@@ -38,8 +38,7 @@ function installSkills() {
 }
 
 // Fallback list if package source is unavailable
-const KNOWN_SKILLS = ['supermind', 'supermind-init', 'supermind-living-docs',
-  'openspec-propose', 'openspec-explore', 'openspec-apply', 'openspec-archive'];
+const KNOWN_SKILLS = ['supermind', 'supermind-init', 'supermind-living-docs'];
 
 function removeSkills() {
   let dirs;
