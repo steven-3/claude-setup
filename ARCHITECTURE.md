@@ -34,8 +34,9 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 | `cli/lib/templates.js` | Template lifecycle: installTemplates(), removeTemplates() |
 | `cli/lib/mcp.js` | MCP server setup: setupMcp(), promptApiKeys(), setupDocker(), setupDirect() |
 | `cli/lib/vendor-skills.js` | Skill fetching, hashing, lock file management (skills-lock.json) |
+| `cli/lib/planning.js` | Planning state management: .planning/ directory CRUD (roadmap, phases, progress, config, research, plans, tasks). Used by Project Mode orchestrator. Path-safe via safeJoin/safeFilenameSegment |
 | `hooks/bash-permissions.js` | PreToolUse hook — blocklist-based command classification; everything auto-approved except ~15 dangerous patterns. Logs blocked commands to ~/.claude/safety-log.jsonl |
-| `hooks/session-start.js` | SessionStart hook — loads previous session summary, injects ARCHITECTURE.md and DESIGN.md |
+| `hooks/session-start.js` | SessionStart hook — loads previous session summary, injects ARCHITECTURE.md and DESIGN.md, detects active .planning/ sessions and reports phase/wave progress |
 | `hooks/session-end.js` | Stop hook — saves session context to ~/.claude/sessions/, tracks git branch and modified files |
 | `hooks/cost-tracker.js` | Stop hook (async) — appends session cost estimate to ~/.claude/cost-log.jsonl |
 | `hooks/pre-merge-checklist.js` | PostToolUse hook — advisory pre-merge checks triggered on git merge Bash calls |
@@ -72,7 +73,8 @@ Supermind is a zero-dependency Node.js CLI (`supermind-claude`) that provides co
 │                                                                   │
 │  SessionStart → session-start.js                                 │
 │    ├─ Load previous session from ~/.claude/sessions/             │
-│    └─ Read ARCHITECTURE.md + DESIGN.md into context              │
+│    ├─ Read ARCHITECTURE.md + DESIGN.md into context              │
+│    └─ Detect .planning/ → report active phase/wave progress      │
 │                                                                   │
 │  PreToolUse (Bash) → bash-permissions.js                         │
 │    ├─ Split compound commands on && || ;                         │
@@ -119,6 +121,7 @@ supermind skill add <github-url> -> git clone -> hash -> copy -> skills-lock.jso
 | `cli/lib/templates.js` | fs, path, platform, logger | install, uninstall |
 | `cli/lib/mcp.js` | fs, path, readline, child_process, platform, logger | install |
 | `cli/lib/vendor-skills.js` | fs, path, os, crypto, child_process | skill command |
+| `cli/lib/planning.js` | fs, path | Project Mode orchestrator (future) |
 | `hooks/bash-permissions.js` | fs, path, os | Runtime (PreToolUse) |
 | `hooks/session-start.js` | fs, path, os | Runtime (SessionStart) |
 | `hooks/session-end.js` | fs, path, os, child_process | Runtime (Stop) |

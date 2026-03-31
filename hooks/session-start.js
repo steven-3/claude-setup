@@ -16,6 +16,8 @@ const MAX_AGE_DAYS = 7;
  * Validate that each segment is safe (no traversal, not absolute), then join
  * onto a trusted base via string concatenation. This satisfies semgrep
  * taint-tracking rules for path.join/path.resolve with untrusted input.
+ * NOTE: Duplicated from cli/lib/planning.js — hooks run standalone and cannot
+ * import from cli/lib/. Keep both copies in sync.
  */
 function safeJoin(trustedBase, ...segments) {
   for (const seg of segments) {
@@ -177,11 +179,11 @@ function formatPlanningContext(projectDir) {
     const roadmapContent = fs.readFileSync(roadmapPath, "utf-8");
     const phases = [];
     for (const line of roadmapContent.split("\n")) {
-      const match = line.match(/^\|\s*(\d+)\s*\|\s*(\S+)\s*\|\s*(.*?)\s*\|\s*$/);
-      if (match) {
+      const match = line.match(/^\|\s*(\d+)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*$/);
+      if (match && match[2].trim()) {
         phases.push({
           phase: parseInt(match[1], 10),
-          status: match[2],
+          status: match[2].trim(),
           description: match[3].trim(),
         });
       }

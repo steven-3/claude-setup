@@ -106,7 +106,11 @@ function safeReadFile(filePath) {
 function safeReadJson(filePath) {
   const raw = safeReadFile(filePath);
   if (raw === null) return null;
-  return JSON.parse(raw);
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 function writeFile(filePath, content) {
@@ -131,11 +135,11 @@ function parseRoadmapTable(content) {
   const phases = [];
   const lines = content.split('\n');
   for (const line of lines) {
-    const match = line.match(/^\|\s*(\d+)\s*\|\s*(\S+)\s*\|\s*(.*?)\s*\|\s*$/);
-    if (match) {
+    const match = line.match(/^\|\s*(\d+)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*$/);
+    if (match && match[2].trim()) {
       phases.push({
         phase: parseInt(match[1], 10),
-        status: match[2],
+        status: match[2].trim(),
         description: match[3].trim(),
       });
     }
@@ -225,7 +229,7 @@ function initPhase(projectRoot, phaseNum) {
 
   writeFile(
     safeJoin(dir, 'discussion.md', 'discussion file'),
-    `# Phase ${safePhaseSegment(phaseNum).replace('phase-', '')} — Discussion\n\n`,
+    `# Phase ${phaseNum} — Discussion\n\n`,
   );
   writeFile(safeJoin(dir, 'progress.md', 'progress file'), PROGRESS_HEADER + '\n');
 
@@ -298,15 +302,16 @@ function readRoadmap(projectRoot) {
  * @param {string} projectRoot
  * @param {number} phaseNum
  * @param {string} status — e.g. 'pending', 'active', 'completed', 'skipped'
+ * @returns {boolean} true if the phase was found and updated
  */
 function updateRoadmap(projectRoot, phaseNum, status) {
   const filePath = safeJoin(planningRoot(projectRoot), ROADMAP_FILE, 'roadmap file');
   const phases = readRoadmap(projectRoot) || [];
   const idx = phases.findIndex(p => p.phase === phaseNum);
-  if (idx >= 0) {
-    phases[idx].status = status;
-  }
+  if (idx < 0) return false;
+  phases[idx].status = status;
   writeFile(filePath, renderRoadmapTable(phases));
+  return true;
 }
 
 /**
@@ -326,8 +331,8 @@ function readConfig(projectRoot) {
  * @param {object} config
  */
 function writeConfig(projectRoot, config) {
-  config.lastUpdated = new Date().toISOString();
-  writeJson(safeJoin(planningRoot(projectRoot), CONFIG_FILE, 'config file'), config);
+  const toWrite = { ...config, lastUpdated: new Date().toISOString() };
+  writeJson(safeJoin(planningRoot(projectRoot), CONFIG_FILE, 'config file'), toWrite);
 }
 
 /**
@@ -339,8 +344,7 @@ function writeConfig(projectRoot, config) {
  */
 function writeDiscussion(projectRoot, phaseNum, content) {
   const filePath = safeJoin(phasePath(projectRoot, phaseNum), 'discussion.md', 'discussion file');
-  const num = safePhaseSegment(phaseNum).replace('phase-', '');
-  const existing = safeReadFile(filePath) || `# Phase ${num} — Discussion\n\n`;
+  const existing = safeReadFile(filePath) || `# Phase ${phaseNum} — Discussion\n\n`;
   writeFile(filePath, existing + content + '\n');
 }
 
