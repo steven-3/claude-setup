@@ -2,160 +2,392 @@
 
 const fs = require('fs');
 const path = require('path');
-const { PATHS } = require('../lib/platform');
+const { PATHS, getPackageRoot } = require('../lib/platform');
 const logger = require('../lib/logger');
 const { getHookFiles } = require('../lib/hooks');
 const { getSkillDirs, getAgentFiles } = require('../lib/skills');
 const { PLUGIN_KEY } = require('../lib/plugin');
+const { readSettings } = require('../lib/settings');
 const { version } = require('../../package.json');
 
-function check(label, pass, detail) {
-  if (pass) {
-    logger.success(label);
-  } else {
-    logger.error(`${label}${detail ? ' \u2014 ' + detail : ''}`);
-  }
-  return pass;
+const GREEN = '\x1b[32m';
+const RED = '\x1b[31m';
+const DIM = '\x1b[2m';
+const BOLD = '\x1b[1m';
+const R = '\x1b[0m';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function section(title) {
+  console.log(`\n  ${BOLD}${title}${R}`);
 }
 
-module.exports = function doctor(flags) {
-  logger.banner();
-  console.log('  Running health checks...\n');
+function ok(label) {
+  logger.success(label);
+  return true;
+}
 
-  let passed = 0;
-  let failed = 0;
+function fail(label, detail) {
+  logger.error(`${label}${detail ? ' — ' + detail : ''}`);
+  return false;
+}
 
-  function run(label, pass, detail) {
-    if (check(label, pass, detail)) passed++;
-    else failed++;
-  }
+// ---------------------------------------------------------------------------
+// Individual checks
+// ---------------------------------------------------------------------------
 
-  // Node.js version
-  const nodeVersion = parseInt(process.versions.node.split('.')[0], 10);
-  run('Node.js >= 18', nodeVersion >= 18, `found v${process.versions.node}`);
+function checkNode() {
+  const major = parseInt(process.versions.node.split('.')[0], 10);
+  return major >= 18
+    ? ok(`Node.js v${process.versions.node} (>= 18 required)`)
+    : fail(`Node.js v${process.versions.node}`, '>= 18 required');
+}
 
-  // Claude home
-  run('~/.claude/ exists', fs.existsSync(PATHS.claudeHome));
+function checkClaudeHome() {
+  return fs.existsSync(PATHS.claudeHome)
+    ? ok('~/.claude/ directory structure OK')
+    : fail('~/.claude/ directory missing');
+}
 
-  // Settings
-  const settingsExists = fs.existsSync(PATHS.settings);
-  run('settings.json exists', settingsExists);
-
-  let settings = {};
-  if (settingsExists) {
-    try {
-      settings = JSON.parse(fs.readFileSync(PATHS.settings, 'utf-8'));
-      run('settings.json is valid JSON', true);
-    } catch (err) {
-      run('settings.json is valid JSON', false, err.message);
-    }
-  }
-
-  // Hooks present
-  let expectedHooks;
+function checkSettings() {
+  if (!fs.existsSync(PATHS.settings)) return fail('settings.json missing');
   try {
-    expectedHooks = getHookFiles();
+    JSON.parse(fs.readFileSync(PATHS.settings, 'utf-8'));
+    return ok('settings.json valid');
   } catch (err) {
-    run('Hook enumeration', false, err.message);
-    expectedHooks = [];
+    return fail('settings.json invalid', err.message);
   }
-  for (const file of expectedHooks) {
-    run(`Hook: ${file}`, fs.existsSync(path.join(PATHS.hooksDir, file)));
+}
+
+// Skills: verify all methodology skills installed with SKILL.md
+function checkSkills() {
+  section('Skills');
+  let expectedDirs;
+  try {
+    expectedDirs = getSkillDirs();
+  } catch {
+    expectedDirs = [
+      'supermind', 'quick', 'project', 'brainstorming', 'tdd',
+      'systematic-debugging', 'anti-rationalization', 'verification-before-completion',
+      'code-review', 'writing-plans', 'executing-plans', 'finishing-branches',
+      'using-git-worktrees', 'supermind-init', 'supermind-living-docs',
+    ];
   }
 
-  // Skills present
-  let expectedSkills;
-  try {
-    expectedSkills = getSkillDirs();
-  } catch (err) {
-    run('Skill enumeration', false, err.message);
-    expectedSkills = [];
-  }
-  for (const dir of expectedSkills) {
+  const missing = [];
+  for (const dir of expectedDirs) {
     const skillPath = path.join(PATHS.skillsDir, dir);
-    run(`Skill: ${dir}`, fs.existsSync(skillPath) && fs.existsSync(path.join(skillPath, 'SKILL.md')));
+    const hasDir = fs.existsSync(skillPath);
+    const hasSkillMd = hasDir && fs.existsSync(path.join(skillPath, 'SKILL.md'));
+    if (!hasDir || !hasSkillMd) missing.push(dir);
   }
 
-  // Agents present
-  let expectedAgents;
-  try {
-    expectedAgents = getAgentFiles();
-  } catch (err) {
-    run('Agent enumeration', false, err.message);
-    expectedAgents = [];
-  }
-  for (const file of expectedAgents) {
-    run(`Agent: ${file}`, fs.existsSync(path.join(PATHS.agentsDir, file)));
-  }
-
-  // Template
-  run('CLAUDE.md template', fs.existsSync(path.join(PATHS.templatesDir, 'CLAUDE.md')));
-
-  // Sessions directory
-  run('Sessions directory writable', (() => {
-    const testFile = path.join(PATHS.sessionsDir, '.doctor-test');
-    try {
-      fs.writeFileSync(testFile, 'test');
-    } catch {
-      return false;
-    }
-    try { fs.unlinkSync(testFile); } catch { /* cleanup non-critical */ }
+  const installed = expectedDirs.length - missing.length;
+  if (missing.length === 0) {
+    ok(`${installed}/${expectedDirs.length} skills installed`);
     return true;
-  })());
+  }
+  fail(`${installed}/${expectedDirs.length} skills installed — missing: ${missing.join(', ')}`);
+  return false;
+}
 
-  // Docker (warn only, not required)
+// Agents: verify agent definitions exist
+function checkAgents() {
+  section('Agents');
+  let expectedFiles;
   try {
-    require('child_process').execSync('docker compose version', { stdio: 'pipe', timeout: 5000 });
-    logger.success('Docker available');
-    passed++;
+    expectedFiles = getAgentFiles();
   } catch {
-    logger.warn('Docker not available (optional \u2014 needed for AIRIS mode)');
+    expectedFiles = ['code-reviewer.md'];
   }
 
-  // Vendor skills
-  try {
-    const vendorSkills = require('../lib/vendor-skills');
-    const result = vendorSkills.verifySkills();
-    for (const name of result.valid) {
-      run(`Vendor skill: ${name}`, true);
-    }
-    for (const name of result.missing) {
-      run(`Vendor skill: ${name}`, false, 'directory not found');
-    }
-  } catch {
-    // No vendor skills or module not loaded — skip silently
+  const missing = [];
+  for (const file of expectedFiles) {
+    if (!fs.existsSync(path.join(PATHS.agentsDir, file))) missing.push(file);
   }
 
-  // Plugin registration
-  run('Plugin registered', (() => {
-    try {
-      const pluginsPath = path.join(PATHS.claudeHome, 'plugins', 'installed_plugins.json');
-      if (!fs.existsSync(pluginsPath)) return false;
-      const registry = JSON.parse(fs.readFileSync(pluginsPath, 'utf-8'));
-      return !!(registry.plugins && registry.plugins[PLUGIN_KEY]);
-    } catch { return false; }
-  })());
+  const installed = expectedFiles.length - missing.length;
+  if (missing.length === 0) {
+    ok(`${installed}/${expectedFiles.length} agents installed`);
+    return true;
+  }
+  fail(`${installed}/${expectedFiles.length} agents installed — missing: ${missing.join(', ')}`);
+  return false;
+}
 
-  // Improvement log
-  run('Improvement log writable', (() => {
-    const logPath = path.join(PATHS.claudeHome, 'improvement-log.jsonl');
-    try {
-      fs.appendFileSync(logPath, '', { flag: 'a' });
-      return true;
-    } catch { return false; }
-  })());
+// Hooks: verify all 8 hooks exist and are registered in settings.json
+function checkHooks() {
+  section('Hooks');
+  let expectedFiles;
+  try {
+    expectedFiles = getHookFiles();
+  } catch {
+    expectedFiles = [
+      'bash-permissions.js', 'session-start.js', 'session-end.js',
+      'cost-tracker.js', 'statusline-command.js', 'context-monitor.js',
+      'pre-merge-checklist.js', 'improvement-logger.js',
+    ];
+  }
 
-  // Version
+  // Check files on disk
+  const missingFiles = [];
+  for (const file of expectedFiles) {
+    if (!fs.existsSync(path.join(PATHS.hooksDir, file))) missingFiles.push(file);
+  }
+
+  // Check registration in settings.json
+  const settings = readSettings();
+  const settingsJson = JSON.stringify(settings);
+  const unregistered = [];
+  for (const file of expectedFiles) {
+    // statusline-command.js is registered under statusLine, not hooks
+    if (file === 'statusline-command.js') {
+      if (!settings.statusLine || !JSON.stringify(settings.statusLine).includes(file)) {
+        unregistered.push(file);
+      }
+    } else if (!settingsJson.includes(file)) {
+      unregistered.push(file);
+    }
+  }
+
+  const fileOk = missingFiles.length === 0;
+  const regOk = unregistered.length === 0;
+  const total = expectedFiles.length;
+
+  if (fileOk && regOk) {
+    ok(`${total}/${total} hooks installed and registered`);
+    return true;
+  }
+  const issues = [];
+  if (!fileOk) issues.push(`missing files: ${missingFiles.join(', ')}`);
+  if (!regOk) issues.push(`not registered: ${unregistered.join(', ')}`);
+  fail(`Hooks — ${issues.join('; ')}`);
+  return false;
+}
+
+// Context monitor: verify hook exists, optionally check metrics file
+function checkContextMonitor() {
+  section('Context monitor');
+  const hookExists = fs.existsSync(path.join(PATHS.hooksDir, 'context-monitor.js'));
+  if (!hookExists) {
+    fail('context-monitor.js hook missing');
+    return false;
+  }
+
+  const metricsPath = path.join(PATHS.claudeHome, 'context-metrics.json');
+  if (fs.existsSync(metricsPath)) {
+    ok('active (metrics file present)');
+  } else {
+    ok('installed (metrics written during active sessions)');
+  }
+  return true;
+}
+
+// Plugin manifest: verify registration and cached manifest
+function checkPlugin() {
+  section('Plugin manifest');
+
+  try {
+    const pluginsPath = path.join(PATHS.claudeHome, 'plugins', 'installed_plugins.json');
+    if (!fs.existsSync(pluginsPath)) {
+      return fail('not registered — installed_plugins.json missing');
+    }
+    const registry = JSON.parse(fs.readFileSync(pluginsPath, 'utf-8'));
+    const entry = registry.plugins && registry.plugins[PLUGIN_KEY];
+    if (!entry || !Array.isArray(entry) || entry.length === 0) {
+      return fail('not registered in installed_plugins.json');
+    }
+
+    // Verify the cached plugin.json is valid
+    const installPath = entry[0].installPath;
+    const manifestPath = path.join(installPath, '.claude-plugin', 'plugin.json');
+    if (fs.existsSync(manifestPath)) {
+      JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+      return ok('valid');
+    }
+    return fail('manifest missing from cache');
+  } catch (err) {
+    return fail('check failed', err.message);
+  }
+}
+
+// Executor engine: verify core modules exist in package
+function checkExecutorEngine() {
+  section('Executor engine');
+  const root = getPackageRoot();
+  const modules = ['cli/lib/executor.js', 'cli/lib/agents.js', 'cli/lib/planning.js'];
+  const missing = modules.filter(m => !fs.existsSync(path.join(root, m)));
+
+  if (missing.length === 0) {
+    return ok('modules present');
+  }
+  return fail(`missing: ${missing.join(', ')}`);
+}
+
+// Safety layer: verify blocklist model and approved commands file
+function checkSafety() {
+  section('Safety layer');
+  const hookPath = path.join(PATHS.hooksDir, 'bash-permissions.js');
+  let blocklist = false;
+  if (fs.existsSync(hookPath)) {
+    try {
+      const content = fs.readFileSync(hookPath, 'utf-8');
+      blocklist = content.includes('BLOCKED') || content.includes('blocklist');
+    } catch { /* non-critical */ }
+  }
+
+  if (!blocklist) {
+    return fail('bash-permissions.js missing or not using blocklist model');
+  }
+
+  // Ensure approved commands file exists
+  if (!fs.existsSync(PATHS.approvedCommands)) {
+    try {
+      fs.writeFileSync(PATHS.approvedCommands, '{}\n');
+    } catch { /* non-critical */ }
+  }
+
+  return ok('blocklist model');
+}
+
+// .planning/ check: project-specific, not an error if absent
+function checkPlanning() {
+  section('Planning');
+  const projectDir = process.env.PROJECT_DIR || process.cwd();
+  const planningDir = path.join(projectDir, '.planning');
+
+  if (!fs.existsSync(planningDir)) {
+    return ok('no active session');
+  }
+
+  let allOk = true;
+
+  // Verify roadmap.md
+  const roadmapPath = path.join(planningDir, 'roadmap.md');
+  if (fs.existsSync(roadmapPath)) {
+    ok('roadmap.md present');
+  } else {
+    fail('roadmap.md missing from .planning/');
+    allOk = false;
+  }
+
+  // Verify config.json
+  const configPath = path.join(planningDir, 'config.json');
+  if (fs.existsSync(configPath)) {
+    try {
+      JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      ok('config.json valid');
+    } catch (err) {
+      fail('config.json invalid', err.message);
+      allOk = false;
+    }
+  } else {
+    fail('config.json missing from .planning/');
+    allOk = false;
+  }
+
+  // Report active phase if detectable
+  if (fs.existsSync(roadmapPath)) {
+    try {
+      const roadmap = fs.readFileSync(roadmapPath, 'utf-8');
+      const activeMatch = roadmap.match(/\|\s*(\d+)\s*\|[^|]*\|\s*(?:in.progress|active|executing)/i);
+      if (activeMatch) {
+        logger.info(`Active phase: ${activeMatch[1]}`);
+      }
+    } catch { /* non-critical */ }
+  }
+
+  return allOk;
+}
+
+// Version marker
+function checkVersion() {
+  section('Version');
   let installedVersion = 'not found';
   try {
     installedVersion = fs.readFileSync(PATHS.versionFile, 'utf-8').trim();
   } catch (err) {
-    if (err.code !== 'ENOENT') {
-      installedVersion = `error: ${err.message}`;
-    }
+    if (err.code !== 'ENOENT') installedVersion = `error: ${err.message}`;
   }
-  run('Version marker', installedVersion === version, installedVersion !== version ? `installed: ${installedVersion}, package: ${version}` : undefined);
 
-  console.log(`\n  ${passed} passed, ${failed} failed\n`);
-  if (failed > 0) process.exit(1);
+  if (installedVersion === version) {
+    return ok(`v${version}`);
+  }
+  return fail(`Version mismatch — installed: ${installedVersion}, package: ${version}`);
+}
+
+// Vendor skills (optional, returns failure count)
+function checkVendorSkills() {
+  try {
+    const vendorSkills = require('../lib/vendor-skills');
+    const result = vendorSkills.verifySkills();
+    if (result.valid.length === 0 && result.missing.length === 0) return 0;
+    section('Vendor skills');
+    let failures = 0;
+    for (const name of result.valid) { ok(name); }
+    for (const name of result.missing) { fail(name, 'directory not found'); failures++; }
+    return failures;
+  } catch {
+    return 0;
+  }
+}
+
+// Docker (optional, warn only)
+function checkDocker() {
+  try {
+    // Static command, no user input — safe to use execSync
+    require('child_process').execSync('docker compose version', { stdio: 'pipe', timeout: 5000 });
+    ok('Docker available');
+  } catch {
+    logger.warn('Docker not available (optional — needed for AIRIS mode)');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
+module.exports = function doctor() {
+  logger.banner();
+  console.log('  Running health checks...');
+
+  let failed = 0;
+  const run = (fn) => { if (!fn()) failed++; };
+
+  // Foundation
+  run(checkNode);
+  run(checkClaudeHome);
+  run(checkSettings);
+
+  // Components
+  run(checkSkills);
+  run(checkAgents);
+  run(checkHooks);
+
+  // Subsystems
+  run(checkContextMonitor);
+  run(checkPlugin);
+  run(checkExecutorEngine);
+  run(checkSafety);
+
+  // Project-specific
+  run(checkPlanning);
+
+  // Version
+  run(checkVersion);
+
+  // Optional (don't count as failures for overall health)
+  failed += checkVendorSkills();
+  checkDocker();
+
+  // Overall
+  console.log('');
+  if (failed === 0) {
+    console.log(`  ${GREEN}${BOLD}Overall: healthy ✓${R}\n`);
+  } else {
+    console.log(`  ${RED}${BOLD}Overall: ${failed} issue${failed === 1 ? '' : 's'} found${R}\n`);
+    process.exit(1);
+  }
 };

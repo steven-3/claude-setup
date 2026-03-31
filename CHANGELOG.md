@@ -1,5 +1,43 @@
 # Changelog
 
+## [4.0.0] - 2026-03-31
+
+Supermind v4: Unified Skill Engine — ground-up rebuild combining GSD's execution infrastructure with Superpowers' behavioral discipline into a single native system. OpenSpec removed. Superpowers plugin dependency removed. Methodology skills forked from obra/superpowers (MIT), adapted for executor injection model.
+
+### Added
+- **Complexity router** (`/supermind`): auto-detects task scope, routes to `/quick` or `/project` mode with escape hatch
+- **Quick Mode** (`/quick`): single-executor path for small tasks — stateless, with automatic skill injection
+- **Project Mode** (`/project`): six-phase lifecycle orchestrator — discuss, research, plan, execute (waves), verify, ship
+- **Executor engine** (`cli/lib/executor.js`): fresh-context subagent execution with `buildTaskPacket()`, `buildWavePlan()` (topological sort), `executeTask()`, and `SKILL_MAP` injection
+- **Agent prompt templates** (`cli/lib/agents.js`): 4 researcher types, planner, plan-checker, debugger, verifier, code-reviewer
+- **Planning state management** (`cli/lib/planning.js`): `.planning/` directory CRUD with path-safe operations
+- **Context monitor** (`hooks/context-monitor.js`): two-hook bridge — warnings at 35%/25% remaining context
+- **Plugin manifest** (`.claude-plugin/plugin.json`): dual npm + plugin distribution with registry in `installed_plugins.json`
+- **10 methodology skills** forked from obra/superpowers (MIT): anti-rationalization, verification-before-completion, TDD, systematic-debugging, brainstorming, code-review, writing-plans, executing-plans, using-git-worktrees, finishing-branches
+- **Agent definitions** (`agents/code-reviewer.md`): review-only subagent for verify phase
+- **Doctor v2** (`cli/commands/doctor.js`): comprehensive health checks for all v4 subsystems — skills (15/15), agents (1/1), hooks (8/8 with registration verification), context monitor, plugin manifest, executor engine modules, safety layer (blocklist model), `.planning/` integrity, and version marker. Organized into sections with overall health summary.
+
+### Changed
+- **bash-permissions.js**: rewritten from allowlist to blocklist model — everything auto-approved by default, only ~15 dangerous patterns blocklisted
+- **Statusline**: redesigned two-line layout with context usage bar, wave progress, and executor count
+- **CLAUDE.md, ARCHITECTURE.md, README.md**: complete rewrites for v4 architecture
+- Hook count: 8 (was 7 in v3.0). Skill count: 15 (was 7 in v3.0). Agent count: 1 (new).
+
+### Removed
+- OpenSpec integration (4 skills, CLI command, lib module)
+- Third-party plugin dependencies (superpowers, claude-md-management, frontend-design, ui-ux-pro-max, pr-review-toolkit, security-guidance, elements-of-style)
+- `cli/lib/plugins.js` module
+
+### Breaking
+- Major version bump: v3.x → v4.0.0
+- OpenSpec skills and CLI commands removed
+- Plugin dependency model replaced with native methodology skills
+- Doctor command output format changed (sectioned layout with subsystem checks)
+
+### Credits
+- Methodology skills forked from [obra/superpowers](https://github.com/obra/superpowers) (MIT) by Jesse Vincent and the Prime Radiant team
+- Execution architecture inspired by [gsd-build/get-shit-done](https://github.com/gsd-build/get-shit-done) (MIT)
+
 ## [3.19.0] - 2026-03-31
 
 ### Changed
